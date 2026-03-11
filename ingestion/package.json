@@ -1,0 +1,20 @@
+{
+  "name": "tpmo-copilot-ingestion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ingest": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@supabase/supabase-js": "^2.99.0",
+    "gray-matter": "^4.0.3",
+    "remark": "^15.0.1",
+    "remark-parse": "^11.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "unified": "^11.0.5"
+  }
+}
