@@ -40,7 +40,7 @@ export interface TreeResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MODEL = "claude-sonnet-4-6-20250514";
+const MODEL = "claude-sonnet-4-6";
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1_000;
 
@@ -166,13 +166,13 @@ async function callClaude(
 
   if (isRetry) {
     messages.push(
-      { role: "assistant", content: "I'll fix the JSON and return only valid JSON:" },
+      { role: "user", content: "Your previous response had invalid JSON. Return ONLY a valid JSON object with no markdown, no explanation, no backticks. Start your response with { and end with }." },
     );
   }
 
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 8_192,
+    max_tokens: 16_000,
     system: SYSTEM_PROMPT,
     messages,
   });

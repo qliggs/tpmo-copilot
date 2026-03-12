@@ -89,7 +89,7 @@ async function fetchNodeTexts(
       .from("doc_trees")
       .select("tree_json")
       .eq("document_id", documentId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       console.warn(`Could not fetch tree for document ${documentId}: ${error?.message}`);

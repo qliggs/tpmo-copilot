@@ -8,7 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 export const anthropic = new Anthropic();
 
 /** Default model for RAG pipeline calls. */
-export const RAG_MODEL = "claude-sonnet-4-6-20250514";
+export const RAG_MODEL = "claude-sonnet-4-6";
 
 /**
  * Call Claude and extract the text response.

@@ -97,7 +97,7 @@ export async function selectNodes(
     .from("doc_trees")
     .select("tree_json")
     .eq("document_id", documentId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     throw new Error(`Failed to fetch tree for document ${documentId}: ${error?.message}`);

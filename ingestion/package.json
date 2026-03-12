@@ -10,6 +10,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@supabase/supabase-js": "^2.99.0",
+    "dotenv": "^17.3.1",
     "gray-matter": "^4.0.3",
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",
