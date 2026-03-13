@@ -59,7 +59,7 @@ A reasoning-based retrieval system for querying an Obsidian vault. Instead of th
 The system uses a 3-step reasoning pipeline instead of vector search:
 
 **Step 1: Document Selection** (OpenRouter — DeepSeek V3)
-Claude receives a lightweight catalog of all documents (titles, summaries, top-level node summaries -- no full text). It reasons about which 1-3 documents are most likely to contain the answer.
+Receives a lightweight catalog of all documents (titles, summaries, top-level node summaries -- no full text). It reasons about which 1-3 documents are most likely to contain the answer.
 
 **Step 2: Node Navigation** (OpenRouter — Qwen3 30B)
 For each selected document, the LLM receives the full tree structure *without* raw text -- just node titles, summaries, depths, and hierarchy. It navigates the tree like a human scanning a table of contents, selecting the most relevant leaf nodes.
