@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { callClaude } from "@/lib/claude";
-import { callOpenRouter } from "@/lib/openrouter";
+import { callOpenRouter, TruncatedResponseError } from "@/lib/openrouter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -85,12 +85,25 @@ function stripRawText(node: Record<string, unknown>): SkeletonNode {
   };
 }
 
-function parseJsonResponse<T>(raw: string): T {
+/**
+ * Parse a JSON response from an LLM, stripping markdown fences if present.
+ * Returns the parsed value or null if the JSON is malformed.
+ */
+function parseJsonResponse<T>(raw: string): T | null {
   const cleaned = raw
     .replace(/^```(?:json)?\s*/m, "")
     .replace(/\s*```\s*$/m, "")
     .trim();
-  return JSON.parse(cleaned) as T;
+
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (err) {
+    console.warn(
+      `[node-selector] JSON parse failed: ${err instanceof Error ? err.message : err}`,
+      `\n  Raw (first 200 chars): ${cleaned.slice(0, 200)}`,
+    );
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -132,27 +145,67 @@ export async function selectNodes(
     nodes: rawNodes.map(stripRawText),
   };
 
-  // Call LLM (hybrid: OpenRouter Qwen3 30B, claude-only: Anthropic Sonnet)
+  // Call LLM with retry on truncation or malformed JSON
   const userMessage = `Question: ${question}\n\nDocument: ${filename}\n\nTree Structure:\n${JSON.stringify(skeleton, null, 2)}`;
-  const raw = await callLLM(SYSTEM_PROMPT, userMessage);
-  const parsed = parseJsonResponse<{
+  const maxAttempts = 2;
+
+  type ParsedNodeResult = {
     nodes: { node_id: string; path: string[]; reason: string }[];
     thinking: string;
-  }>(raw);
+  };
 
-  // Cap results and attach document context
-  const capped = parsed.nodes.slice(0, MAX_NODES).map((n) =>
-    Object.freeze({
-      node_id: n.node_id,
-      document_id: documentId,
-      filename,
-      path: n.path,
-      reason: n.reason,
-    }),
-  );
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const raw = await callLLM(SYSTEM_PROMPT, userMessage);
+      const parsed = parseJsonResponse<ParsedNodeResult>(raw);
 
-  return Object.freeze({
-    nodes: capped,
-    thinking: parsed.thinking,
-  });
+      if (!parsed || !Array.isArray(parsed.nodes)) {
+        if (attempt < maxAttempts) {
+          console.warn(`[node-selector] Malformed response for ${filename}, retrying...`);
+          continue;
+        }
+        return Object.freeze({
+          nodes: [],
+          thinking: `LLM returned malformed JSON for ${filename} after retries.`,
+        });
+      }
+
+      const capped = parsed.nodes.slice(0, MAX_NODES).map((n) =>
+        Object.freeze({
+          node_id: n.node_id,
+          document_id: documentId,
+          filename,
+          path: n.path,
+          reason: n.reason,
+        }),
+      );
+
+      return Object.freeze({
+        nodes: capped,
+        thinking: parsed.thinking ?? "",
+      });
+    } catch (err) {
+      const isTruncated = err instanceof TruncatedResponseError;
+      const isRetryable = isTruncated || (err instanceof SyntaxError);
+
+      if (isRetryable && attempt < maxAttempts) {
+        console.warn(
+          `[node-selector] ${isTruncated ? "Truncated" : "Parse error"} for ${filename}, retrying (attempt ${attempt}/${maxAttempts})...`,
+        );
+        continue;
+      }
+
+      console.error(
+        `[node-selector] Failed for ${filename} after ${attempt} attempt(s):`,
+        err instanceof Error ? err.message : err,
+      );
+      return Object.freeze({
+        nodes: [],
+        thinking: `Node selection failed for ${filename}: ${err instanceof Error ? err.message : "Unknown error"}`,
+      });
+    }
+  }
+
+  // Unreachable, but TypeScript needs it
+  return Object.freeze({ nodes: [], thinking: "Exhausted retries." });
 }

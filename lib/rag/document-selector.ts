@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { callClaude } from "@/lib/claude";
-import { callOpenRouter } from "@/lib/openrouter";
+import { callOpenRouter, TruncatedResponseError } from "@/lib/openrouter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,14 +77,24 @@ function extractTopLevelSummaries(
 }
 
 /**
- * Parse a JSON response from Claude, stripping markdown fences if present.
+ * Parse a JSON response from an LLM, stripping markdown fences if present.
+ * Returns the parsed value or null if the JSON is malformed.
  */
-function parseJsonResponse<T>(raw: string): T {
+function parseJsonResponse<T>(raw: string): T | null {
   const cleaned = raw
     .replace(/^```(?:json)?\s*/m, "")
     .replace(/\s*```\s*$/m, "")
     .trim();
-  return JSON.parse(cleaned) as T;
+
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (err) {
+    console.warn(
+      `[document-selector] JSON parse failed: ${err instanceof Error ? err.message : err}`,
+      `\n  Raw (first 200 chars): ${cleaned.slice(0, 200)}`,
+    );
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -140,16 +150,54 @@ export async function selectDocuments(
     };
   });
 
-  // Call LLM (hybrid: OpenRouter DeepSeek V3, claude-only: Anthropic Sonnet)
+  // Call LLM with retry on truncation or malformed JSON
   const userMessage = `Question: ${question}\n\nDocument Catalog:\n${JSON.stringify(catalog, null, 2)}`;
-  const raw = await callLLM(SYSTEM_PROMPT, userMessage);
-  const parsed = parseJsonResponse<{ selected: SelectedDocument[]; thinking: string }>(raw);
+  const maxAttempts = 2;
 
-  // Cap results
-  const capped = parsed.selected.slice(0, MAX_DOCS);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const raw = await callLLM(SYSTEM_PROMPT, userMessage);
+      const parsed = parseJsonResponse<{ selected: SelectedDocument[]; thinking: string }>(raw);
 
-  return Object.freeze({
-    selected: capped,
-    thinking: parsed.thinking,
-  });
+      if (!parsed || !Array.isArray(parsed.selected)) {
+        if (attempt < maxAttempts) {
+          console.warn("[document-selector] Malformed response, retrying...");
+          continue;
+        }
+        return Object.freeze({
+          selected: [],
+          thinking: "LLM returned malformed JSON after retries.",
+        });
+      }
+
+      const capped = parsed.selected.slice(0, MAX_DOCS);
+
+      return Object.freeze({
+        selected: capped,
+        thinking: parsed.thinking ?? "",
+      });
+    } catch (err) {
+      const isTruncated = err instanceof TruncatedResponseError;
+      const isRetryable = isTruncated || (err instanceof SyntaxError);
+
+      if (isRetryable && attempt < maxAttempts) {
+        console.warn(
+          `[document-selector] ${isTruncated ? "Truncated" : "Parse error"}, retrying (attempt ${attempt}/${maxAttempts})...`,
+        );
+        continue;
+      }
+
+      console.error(
+        `[document-selector] Failed after ${attempt} attempt(s):`,
+        err instanceof Error ? err.message : err,
+      );
+      return Object.freeze({
+        selected: [],
+        thinking: `Document selection failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      });
+    }
+  }
+
+  // Unreachable, but TypeScript needs it
+  return Object.freeze({ selected: [], thinking: "Exhausted retries." });
 }

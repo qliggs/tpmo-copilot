@@ -102,10 +102,31 @@ export async function callOpenRouter(
     );
   }
 
-  const content = data.choices?.[0]?.message?.content;
+  const choice = data.choices?.[0];
+  const content = choice?.message?.content;
   if (!content) {
     throw new Error("No content in OpenRouter response");
   }
 
+  // Detect truncated output: finish_reason "length" means the model hit
+  // max_tokens before completing. Throw a specific error so callers can retry.
+  if (choice.finish_reason === "length") {
+    throw new TruncatedResponseError(
+      `OpenRouter response truncated (finish_reason: length). Model hit max_tokens (${maxTokens}).`,
+    );
+  }
+
   return content;
+}
+
+// ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
+/** Thrown when OpenRouter returns finish_reason === "length" (output truncated). */
+export class TruncatedResponseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TruncatedResponseError";
+  }
 }
