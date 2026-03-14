@@ -1,7 +1,5 @@
-// Home page — renders the chat interface.
-
 import ChatInterface from "@/components/ChatInterface";
 
-export default function Home() {
+export default function ChatPage() {
   return <ChatInterface />;
 }

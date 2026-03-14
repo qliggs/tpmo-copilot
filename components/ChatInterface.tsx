@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
+import Link from "next/link";
 import MessageBubble, { type Message } from "./MessageBubble";
 
 // ---------------------------------------------------------------------------
@@ -112,13 +113,25 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-screen bg-gray-900">
       {/* Header */}
-      <header className="shrink-0 border-b border-gray-800 px-6 py-4">
-        <h1 className="text-lg font-semibold text-gray-100 tracking-tight">
-          TPMO Copilot
-        </h1>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Query your knowledge vault
-        </p>
+      <header className="shrink-0 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-100 tracking-tight">
+            TPMO Copilot
+          </h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Query your knowledge vault
+          </p>
+        </div>
+        <Link
+          href="/admin"
+          className="text-gray-500 hover:text-gray-300 transition-colors"
+          title="Admin"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </Link>
       </header>
 
       {/* Message thread */}

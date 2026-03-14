@@ -3,12 +3,11 @@ import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-dotenv.config({ path: resolve(__dirname, "../.env") });
+dotenv.config({ path: resolve(__dirname, "../.env"), override: true });
 
 // Ingestion CLI entry point
 // Orchestrates: vault read -> delta detection -> tree building -> Supabase write
 
-import { resolve } from "node:path";
 import { stat } from "node:fs/promises";
 import Anthropic from "@anthropic-ai/sdk";
 import { readVault, type VaultDocument } from "./vault-reader.js";

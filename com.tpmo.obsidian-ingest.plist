@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.tpmo.obsidian-ingest</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/npm</string>
+        <string>run</string>
+        <string>ingest</string>
+        <string>--</string>
+        <string>--vault</string>
+        <string>/Users/quentinligginsjr/Obsidian/TPMO/TPMO/TPMO</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/quentinligginsjr/Claude Code/tpmo-copilot</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/quentinligginsjr/logs/tpmo-ingest.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/quentinligginsjr/logs/tpmo-ingest-error.log</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>6</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>22</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    </dict>
+</dict>
+</plist>

@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { callClaude } from "@/lib/claude";
+import { callOpenRouter } from "@/lib/openrouter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,6 +38,20 @@ interface SkeletonNode {
 // ---------------------------------------------------------------------------
 
 const MAX_NODES = parseInt(process.env.MAX_NODES_PER_DOC ?? "8", 10);
+const INFERENCE_MODE = process.env.INFERENCE_MODE ?? "claude-only";
+const NODE_SELECT_MODEL = process.env.OPENROUTER_NODE_SELECT_MODEL ?? "qwen/qwen3-30b-a3b";
+
+/**
+ * Route the LLM call based on INFERENCE_MODE.
+ * "hybrid"      → OpenRouter (Qwen3 30B)
+ * "claude-only"  → Anthropic (Claude Sonnet) — V0 behavior
+ */
+async function callLLM(system: string, userMessage: string): Promise<string> {
+  if (INFERENCE_MODE === "hybrid") {
+    return callOpenRouter(system, userMessage, NODE_SELECT_MODEL);
+  }
+  return callClaude(system, userMessage);
+}
 
 const SYSTEM_PROMPT = `You are navigating a document's hierarchical table of contents. Given a question and this document's tree structure (summaries only, no full text), identify which specific nodes most likely contain the answer.
 
@@ -117,9 +132,9 @@ export async function selectNodes(
     nodes: rawNodes.map(stripRawText),
   };
 
-  // Call Claude
+  // Call LLM (hybrid: OpenRouter Qwen3 30B, claude-only: Anthropic Sonnet)
   const userMessage = `Question: ${question}\n\nDocument: ${filename}\n\nTree Structure:\n${JSON.stringify(skeleton, null, 2)}`;
-  const raw = await callClaude(SYSTEM_PROMPT, userMessage);
+  const raw = await callLLM(SYSTEM_PROMPT, userMessage);
   const parsed = parseJsonResponse<{
     nodes: { node_id: string; path: string[]; reason: string }[];
     thinking: string;

@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { callClaude } from "@/lib/claude";
+import { callOpenRouter } from "@/lib/openrouter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,6 +34,20 @@ interface CatalogEntry {
 // ---------------------------------------------------------------------------
 
 const MAX_DOCS = parseInt(process.env.MAX_DOCS_PER_QUERY ?? "5", 10);
+const INFERENCE_MODE = process.env.INFERENCE_MODE ?? "claude-only";
+const DOC_SELECT_MODEL = process.env.OPENROUTER_DOC_SELECT_MODEL ?? "deepseek/deepseek-chat-v3-0324";
+
+/**
+ * Route the LLM call based on INFERENCE_MODE.
+ * "hybrid"      → OpenRouter (DeepSeek V3)
+ * "claude-only"  → Anthropic (Claude Sonnet) — V0 behavior
+ */
+async function callLLM(system: string, userMessage: string): Promise<string> {
+  if (INFERENCE_MODE === "hybrid") {
+    return callOpenRouter(system, userMessage, DOC_SELECT_MODEL);
+  }
+  return callClaude(system, userMessage);
+}
 
 const SYSTEM_PROMPT = `You are a document navigator. Given a user's question and a catalog of available documents (each with a title and high-level summary), identify which 1-3 documents are most likely to contain the answer.
 
@@ -125,9 +140,9 @@ export async function selectDocuments(
     };
   });
 
-  // Call Claude
+  // Call LLM (hybrid: OpenRouter DeepSeek V3, claude-only: Anthropic Sonnet)
   const userMessage = `Question: ${question}\n\nDocument Catalog:\n${JSON.stringify(catalog, null, 2)}`;
-  const raw = await callClaude(SYSTEM_PROMPT, userMessage);
+  const raw = await callLLM(SYSTEM_PROMPT, userMessage);
   const parsed = parseJsonResponse<{ selected: SelectedDocument[]; thinking: string }>(raw);
 
   // Cap results

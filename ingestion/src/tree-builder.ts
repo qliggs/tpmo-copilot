@@ -7,6 +7,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { VaultDocument } from "./vault-reader.js";
 import { extractHeadingSkeleton } from "./utils/markdown-parser.js";
 import { validateTree } from "./utils/validate-tree.js";
+import { callOpenRouter } from "./openrouter-client.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,9 +41,61 @@ export interface TreeResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MODEL = "claude-sonnet-4-6";
+const ANTHROPIC_MODEL = "claude-sonnet-4-6";
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1_000;
+const TREE_MAX_TOKENS = 32_000;
+
+// NOTE: These are read lazily (inside functions) because ESM hoists static
+// imports before dotenv.config() runs in index.ts.  Module-level reads would
+// see `undefined` and fall back to defaults.
+function getInferenceMode(): string {
+  return process.env.INFERENCE_MODE ?? "claude-only";
+}
+function getOpenRouterTreeModel(): string {
+  return process.env.OPENROUTER_TREE_MODEL ?? "deepseek/deepseek-chat-v3-0324";
+}
+
+// ---------------------------------------------------------------------------
+// Provider abstraction for fallback chain
+// ---------------------------------------------------------------------------
+
+/** A provider is a function that takes a system prompt + user message and returns text. */
+type LLMProvider = (system: string, userMessage: string) => Promise<string>;
+
+/** Build the ordered provider list based on INFERENCE_MODE. */
+async function buildProviderChain(
+  anthropic: Anthropic,
+): Promise<readonly { readonly name: string; readonly call: LLMProvider }[]> {
+  const mode = getInferenceMode();
+
+  if (mode !== "hybrid") {
+    // claude-only: single provider, no fallback
+    return [
+      {
+        name: "Anthropic",
+        call: (system, userMessage) =>
+          callAnthropicDirect(anthropic, system, userMessage, false),
+      },
+    ];
+  }
+
+  // Hybrid: OpenRouter -> Anthropic
+  const openRouterModel = getOpenRouterTreeModel();
+
+  return [
+    {
+      name: "OpenRouter",
+      call: (system, userMessage) =>
+        callOpenRouter(system, userMessage, openRouterModel, TREE_MAX_TOKENS),
+    },
+    {
+      name: "Anthropic",
+      call: (system, userMessage) =>
+        callAnthropicDirect(anthropic, system, userMessage, false),
+    },
+  ];
+}
 
 const SYSTEM_PROMPT = `You are building a structured index tree for a document retrieval system.
 Your job is to analyze the document and produce a hierarchical JSON tree that represents its structure — like an intelligent Table of Contents.
@@ -148,15 +201,105 @@ function parseTreeJson(raw: string): DocumentTree {
     .replace(/\s*```\s*$/m, "")
     .trim();
 
-  return JSON.parse(cleaned) as DocumentTree;
+  const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+
+  // Normalize the tree object: resolve wrapper keys and alternative field names
+  const tree = resolveTreeObject(parsed);
+
+  if (!Array.isArray(tree.nodes)) {
+    throw new SyntaxError(
+      `Invalid tree structure: "nodes" not found. Top-level keys: ${Object.keys(parsed).join(", ")}`,
+    );
+  }
+
+  // Recursively normalize node fields (children aliases, missing fields)
+  const normalizedNodes = normalizeNodes(tree.nodes as Record<string, unknown>[]);
+
+  return {
+    doc_id: (tree.doc_id ?? "") as string,
+    title: (tree.title ?? "") as string,
+    summary: (tree.summary ?? "") as string,
+    total_nodes: normalizedNodes.length,
+    nodes: normalizedNodes,
+  };
+}
+
+/** Alternative key names that models use instead of "nodes"/"children". */
+const NODES_ALIASES = ["nodes", "sections", "items", "children", "content"] as const;
+const CHILDREN_ALIASES = ["children", "subsections", "sub_sections", "items", "nodes"] as const;
+
+/**
+ * Recursively normalize node objects so they all have a `children` array.
+ * Models may use "subsections", "sub_sections", etc. instead of "children".
+ * Also ensures `children` is always an array (never undefined/null).
+ */
+function normalizeNodes(
+  nodes: readonly Record<string, unknown>[],
+  counter: { value: number } = { value: 0 },
+): readonly TreeNode[] {
+  return nodes.map((node) => {
+    counter.value += 1;
+    const id = String(node.node_id ?? node.id ?? "");
+    const autoId = id || `n_${String(counter.value).padStart(3, "0")}`;
+
+    // Find the children array under any alias
+    const childKey = CHILDREN_ALIASES.find((k) => Array.isArray(node[k]));
+    const rawChildren = childKey ? (node[childKey] as Record<string, unknown>[]) : [];
+
+    return {
+      node_id: autoId,
+      depth: (node.depth ?? node.level ?? 1) as number,
+      title: (node.title ?? node.heading ?? "") as string,
+      summary: (node.summary ?? node.description ?? "") as string,
+      page_ref: (node.page_ref ?? node.page ?? 0) as number,
+      raw_text: (node.raw_text ?? node.text ?? node.content ?? "") as string,
+      children: normalizeNodes(rawChildren, counter),
+    };
+  });
+}
+
+/**
+ * Resolve a parsed JSON object into a DocumentTree shape.
+ * Handles: wrapper keys ({ document: { ... } }), alternative field names
+ * (sections → nodes), and missing top-level fields.
+ */
+function resolveTreeObject(parsed: Record<string, unknown>): Record<string, unknown> {
+  // Try to find nodes (or alias) at the current level
+  const nodesKey = NODES_ALIASES.find((k) => Array.isArray(parsed[k]));
+  if (nodesKey) {
+    if (nodesKey !== "nodes") {
+      console.log(`[TREE] Renaming "${nodesKey}" → "nodes" in model response`);
+      return { ...parsed, nodes: parsed[nodesKey] };
+    }
+    return parsed;
+  }
+
+  // No nodes at top level — check for a single wrapper key containing an object
+  for (const key of Object.keys(parsed)) {
+    const value = parsed[key];
+    if (typeof value !== "object" || value === null || Array.isArray(value)) continue;
+
+    const inner = value as Record<string, unknown>;
+    const innerNodesKey = NODES_ALIASES.find((k) => Array.isArray(inner[k]));
+    if (innerNodesKey) {
+      console.log(`[TREE] Unwrapping "${key}" and renaming "${innerNodesKey}" → "nodes"`);
+      return innerNodesKey === "nodes"
+        ? inner
+        : { ...inner, nodes: inner[innerNodesKey] };
+    }
+  }
+
+  // Return as-is — caller will throw with diagnostic info
+  return parsed;
 }
 
 // ---------------------------------------------------------------------------
-// Core: call Claude with retry + backoff
+// Core: Anthropic direct call (used as final fallback and claude-only mode)
 // ---------------------------------------------------------------------------
 
-async function callClaude(
+async function callAnthropicDirect(
   anthropic: Anthropic,
+  system: string,
   userPrompt: string,
   isRetry: boolean,
 ): Promise<string> {
@@ -170,38 +313,49 @@ async function callClaude(
     );
   }
 
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 16_000,
-    system: SYSTEM_PROMPT,
+  // Use streaming to avoid the 10-minute timeout on large responses
+  const stream = anthropic.messages.stream({
+    model: ANTHROPIC_MODEL,
+    max_tokens: TREE_MAX_TOKENS,
+    system,
     messages,
   });
 
+  const response = await stream.finalMessage();
+
   const textBlock = response.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text content in Claude response");
+    throw new Error("No text content in Anthropic response");
   }
 
   return textBlock.text;
 }
 
-async function callWithRetry(
-  anthropic: Anthropic,
+// ---------------------------------------------------------------------------
+// Retry + fallback chain
+// ---------------------------------------------------------------------------
+
+/**
+ * Try a single provider with retry + backoff.
+ * Returns the parsed tree on success, or null if all retries exhausted.
+ * Throws only on non-retryable errors that aren't provider-level failures.
+ */
+async function tryProviderWithRetry(
+  provider: LLMProvider,
+  providerName: string,
   userPrompt: string,
-): Promise<DocumentTree> {
+): Promise<DocumentTree | null> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const isRetry = attempt > 0;
-
     if (attempt > 0) {
       const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
-      console.log(`  Retry ${attempt}/${MAX_RETRIES - 1} after ${backoff}ms...`);
+      console.log(`  [${providerName}] Retry ${attempt}/${MAX_RETRIES - 1} after ${backoff}ms...`);
       await sleep(backoff);
     }
 
     try {
-      const raw = await callClaude(anthropic, userPrompt, isRetry);
+      const raw = await provider(SYSTEM_PROMPT, userPrompt);
       return parseTreeJson(raw);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
@@ -212,17 +366,50 @@ async function callWithRetry(
       const isJsonError = lastError instanceof SyntaxError;
 
       if (isRateLimit || isJsonError) {
-        console.warn(`  Attempt ${attempt + 1} failed: ${lastError.message}`);
+        console.warn(`  [${providerName}] Attempt ${attempt + 1} failed: ${lastError.message}`);
         continue;
       }
 
-      // Non-retryable error
-      throw lastError;
+      // Non-retryable provider error — fall through to next provider
+      console.warn(`  [${providerName}] Non-retryable error: ${lastError.message}`);
+      return null;
     }
   }
 
+  console.warn(`  [${providerName}] Exhausted ${MAX_RETRIES} retries. Last: ${lastError?.message}`);
+  return null;
+}
+
+/**
+ * Call with fallback chain: tries each provider in order.
+ * In hybrid mode: Ollama -> OpenRouter -> Anthropic.
+ * In claude-only mode: just Anthropic.
+ */
+async function callWithFallback(
+  anthropic: Anthropic,
+  userPrompt: string,
+): Promise<DocumentTree> {
+  const chain = await buildProviderChain(anthropic);
+
+  const names = chain.map((p) => p.name).join(" -> ");
+  console.log(`[TREE] Fallback chain: ${names}`);
+
+  for (const provider of chain) {
+    console.log(`[TREE] Trying provider: ${provider.name}`);
+    const result = await tryProviderWithRetry(
+      provider.call,
+      provider.name,
+      userPrompt,
+    );
+    if (result) {
+      console.log(`[TREE] Success via ${provider.name}`);
+      return result;
+    }
+    console.log(`[TREE] ${provider.name} failed — falling through`);
+  }
+
   throw new Error(
-    `Failed after ${MAX_RETRIES} attempts. Last error: ${lastError?.message}`,
+    `All providers exhausted (${names}). Tree build failed.`,
   );
 }
 
@@ -242,7 +429,7 @@ export async function buildTree(
   console.log(`[TREE] Building tree: ${doc.filename} (${doc.word_count.toLocaleString()} words)...`);
 
   const userPrompt = buildUserPrompt(doc);
-  const tree = await callWithRetry(anthropic, userPrompt);
+  const tree = await callWithFallback(anthropic, userPrompt);
 
   const nodeCount = countNodes(tree.nodes);
   const maxDepth = findMaxDepth(tree.nodes);

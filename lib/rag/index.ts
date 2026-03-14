@@ -1,14 +1,15 @@
 // RAG Pipeline Orchestrator
-// Runs the 3-step reasoning-based retrieval pipeline:
-//   1. Document selection (catalog navigation)
-//   2. Node selection (tree navigation per document)
-//   3. Answer generation (context assembly + Claude)
+// Routes queries through two modes:
+//   Mode A (vault): 3-step reasoning-based retrieval from Obsidian docs
+//   Mode B (portfolio): Direct SQL query against the projects table
 // Logs results to query_log table in Supabase.
 
 import { supabaseAdmin as getAdmin } from "@/lib/supabase";
 import { selectDocuments } from "./document-selector";
 import { selectNodes, type SelectedNode } from "./node-selector";
 import { generateAnswer, type Source } from "./answer-generator";
+import { detectQueryMode } from "./mode-detector";
+import { queryPortfolio } from "./portfolio-query";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -72,6 +73,32 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
   const start = performance.now();
   const reasoningParts: string[] = [];
   let llmCalls = 0;
+
+  // -- Mode Detection ---------------------------------------------------------
+  const mode = detectQueryMode(question);
+  reasoningParts.push(`[Mode Detection] Query classified as: ${mode}`);
+
+  // -- Mode B: Portfolio Query ------------------------------------------------
+  if (mode === "portfolio") {
+    const portfolioResult = await queryPortfolio(question, getAdmin());
+    llmCalls++;
+    reasoningParts.push(
+      `[Portfolio Query] Queried ${portfolioResult.projectCount} projects from the Book of Work.`,
+    );
+
+    const result: RAGResult = Object.freeze({
+      answer: portfolioResult.answer,
+      sources: [{ filename: "Book of Work (Notion)", section_path: ["Portfolio Data"] }],
+      reasoning: reasoningParts.join("\n\n"),
+      latency_ms: elapsed(start),
+      total_llm_calls: llmCalls,
+    });
+
+    await logQuery(question, result);
+    return result;
+  }
+
+  // -- Mode A: Vault RAG (existing 3-step pipeline) ---------------------------
 
   // -- Step 1: Document Selection -------------------------------------------
   const docResult = await selectDocuments(question, getAdmin());
