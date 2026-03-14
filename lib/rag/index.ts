@@ -9,7 +9,7 @@ import { selectDocuments } from "./document-selector";
 import { selectNodes, type SelectedNode } from "./node-selector";
 import { generateAnswer, type Source } from "./answer-generator";
 import { detectQueryMode } from "./mode-detector";
-import { queryPortfolio } from "./portfolio-query";
+import { queryPortfolio, hasPortfolioData } from "./portfolio-query";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,24 +78,33 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
   const mode = detectQueryMode(question);
   reasoningParts.push(`[Mode Detection] Query classified as: ${mode}`);
 
-  // -- Mode B: Portfolio Query ------------------------------------------------
+  // -- Mode B: Portfolio Query (with fallback to vault) ------------------------
   if (mode === "portfolio") {
-    const portfolioResult = await queryPortfolio(question, getAdmin());
-    llmCalls++;
+    const hasData = await hasPortfolioData(getAdmin());
+
+    if (hasData) {
+      const portfolioResult = await queryPortfolio(question, getAdmin());
+      llmCalls++;
+      reasoningParts.push(
+        `[Portfolio Query] Queried ${portfolioResult.projectCount} projects from the Book of Work.`,
+      );
+
+      const result: RAGResult = Object.freeze({
+        answer: portfolioResult.answer,
+        sources: [{ filename: "Book of Work (Notion)", section_path: ["Portfolio Data"] }],
+        reasoning: reasoningParts.join("\n\n"),
+        latency_ms: elapsed(start),
+        total_llm_calls: llmCalls,
+      });
+
+      await logQuery(question, result);
+      return result;
+    }
+
+    // No portfolio data — fall back to vault RAG
     reasoningParts.push(
-      `[Portfolio Query] Queried ${portfolioResult.projectCount} projects from the Book of Work.`,
+      "[Portfolio Fallback] No projects in database. Falling back to vault RAG.",
     );
-
-    const result: RAGResult = Object.freeze({
-      answer: portfolioResult.answer,
-      sources: [{ filename: "Book of Work (Notion)", section_path: ["Portfolio Data"] }],
-      reasoning: reasoningParts.join("\n\n"),
-      latency_ms: elapsed(start),
-      total_llm_calls: llmCalls,
-    });
-
-    await logQuery(question, result);
-    return result;
   }
 
   // -- Mode A: Vault RAG (existing 3-step pipeline) ---------------------------

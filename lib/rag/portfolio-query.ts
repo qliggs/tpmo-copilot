@@ -49,6 +49,25 @@ If the data doesn't contain enough information to answer, say so clearly.`;
 // ---------------------------------------------------------------------------
 
 /**
+ * Lightweight check: does the projects table have any rows?
+ * Used by the orchestrator to verify portfolio mode before committing.
+ */
+export async function hasPortfolioData(
+  supabase: SupabaseClient,
+): Promise<boolean> {
+  const { count, error } = await supabase
+    .from("projects")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.warn(`[portfolio-query] Failed to check projects: ${error.message}`);
+    return false;
+  }
+
+  return (count ?? 0) > 0;
+}
+
+/**
  * Query the projects table and generate an answer about portfolio status.
  * This is Mode B of the RAG pipeline — used for operational/status questions.
  */
