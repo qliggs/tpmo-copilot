@@ -1,269 +1,193 @@
-# TPMO Copilot — AI-Powered TPM Second Brain
+# TPMO Copilot
 
-A reasoning-based retrieval system for querying an Obsidian vault. Instead of the standard chunk-and-embed approach (vector similarity), TPMO Copilot builds hierarchical PageIndex trees for each document and uses LLMs to *reason through the structure* at query time. This works better for structured knowledge bases where documents have clear sections, headings, and logical organization -- the LLM navigates the tree like a human scanning a table of contents, selecting the most relevant sections before generating an answer with source citations.
+A personal AI assistant that reads years of TPM documentation and live portfolio data, then answers questions in plain English — like having a second brain that knows both your work history and what's happening right now.
 
-## Architecture (V0.5 — Hybrid Inference)
+**Live:** https://tpmo-copilot.vercel.app
+
+---
+
+## What It Does
+
+Ask it a question in plain English. It reads the right data source, finds the most relevant information, and synthesizes a structured answer with citations.
+
+**Example queries (real outputs):**
+
+> *"What were my biggest accomplishments in the Snowflake migration?"*
+
+Returns a structured breakdown of contribution categories — program architecture, enterprise readiness, failover execution, stakeholder alignment, and post-cutover stabilization — with citations to the exact document sections it pulled from.
+
+> *"How many High priority projects does Endpoint Engineering own?"*
+
+Returns a live table of projects pulled from the Notion Book of Work — current status, size, resources, and quarter — synthesized from the actual portfolio database.
+
+> *"What are 3 projects that would look best to TPM recruiters?"*
+
+Cross-document synthesis pulling from the Projects Portfolio, Resume, and Interview Cheat Sheet simultaneously.
+
+---
+
+## Architecture
+
+### Dual-Source Intelligence
+
+TPMO Copilot reasons over two independent data sources:
+
+| Source | Content | Query Mode |
+|---|---|---|
+| Obsidian vault (33 docs) | Historical projects, retrospectives, accomplishments, interview prep | Mode A — PageIndex RAG |
+| Notion Book of Work (64 projects) | Live portfolio: current status, teams, priorities, resources | Mode B — SQL synthesis |
+
+### Vectorless RAG (PageIndex)
+
+Instead of embedding documents into vectors, an AI builds a **hierarchical JSON tree** representing each document's structure. Retrieval works by reasoning over that structure — no vector database, no embedding costs, no re-indexing.
+
+### 3-Step Query Pipeline (Mode A — Vault)
 
 ```
-                         INGESTION PIPELINE
-  +----------------+     +-------------+     +--------------------+
-  | Obsidian Vault | --> | Vault Reader| --> | Tree Builder       |
-  | (.md files)    |     | gray-matter |     | OpenRouter primary |
-  +----------------+     | remark/AST  |     | Anthropic fallback |
-                          +-------------+     | -> PageIndex JSON  |
-                                              +--------+-----------+
-                                                       |
-                                                       v
-                                              +------------------+
-                                              |    Supabase      |
-                                              |  +------------+  |
-                                              |  | documents   |  |
-                                              |  | doc_trees   |  |
-                                              |  | query_log   |  |
-                                              |  +------------+  |
-                                              +--------+---------+
-                                                       |
-                         RAG QUERY PIPELINE             |
-  +----------------+     +-------------+     +---------+----------+
-  |   Chat UI      | --> | /api/query  | --> | Step 1: Doc Select  |
-  | (Next.js)      |     |             |     | OpenRouter DeepSeek |
-  +----------------+     |             |     +---------+----------+
-        ^                |             |               |
-        |                |             |     +---------+----------+
-        |                |             |     | Step 2: Node Nav    |
-        |                |             |     | OpenRouter Qwen3    |
-        +--- answer -----|             |     +---------+----------+
-             sources     |             |               |
-             reasoning   +-------------+     +---------+----------+
-                                             | Step 3: Answer Gen  |
-                                             | Claude Sonnet       |
-                                             +---------------------+
+User Question
+      ↓
+Step 1 — Document Selector       OpenRouter (DeepSeek V3)
+  Reads root summaries of all document trees
+  Returns top 5 most relevant documents
+      ↓
+Step 2 — Node Selector           OpenRouter (Qwen3 30B)
+  Reads full trees of selected documents
+  Returns top 8 most relevant sections
+      ↓
+Step 3 — Answer Generator        Claude Sonnet
+  Reads raw content of selected sections
+  Synthesizes structured answer with source citations
+      ↓
+Response with citations to exact document + section
 ```
 
-## Tech Stack
+### Dual-Mode Query Routing
 
-| Layer       | Technology                                     |
-|-------------|------------------------------------------------|
-| Framework   | Next.js (App Router)                           |
-| Language    | TypeScript (strict)                            |
-| Styling     | Tailwind CSS v4                                |
-| Database    | Supabase (Postgres)                            |
-| LLM (Steps 1-2) | OpenRouter (DeepSeek V3, Qwen3 30B)      |
-| LLM (Step 3)    | Claude Sonnet via @anthropic-ai/sdk       |
-| LLM (Ingestion) | OpenRouter primary, Anthropic fallback    |
-| Ingestion   | Standalone CLI (tsx)                           |
-| Font        | IBM Plex Mono                                  |
+```
+User Question
+      ↓
+Mode Detector (keyword classifier, no LLM call)
+      │
+      ├── Portfolio signals detected? ──► hasPortfolioData() check
+      │         │                               │
+      │         ├── Records found ──────────► Mode B (SQL → Claude)
+      │         └── No records ──────────────► Mode A (RAG pipeline)
+      │
+      └── No portfolio signals ────────────► Mode A (RAG pipeline)
+```
 
-## How It Works
+### Hybrid Inference
 
-The system uses a 3-step reasoning pipeline instead of vector search:
+Each pipeline task routes to the cheapest capable model:
 
-**Step 1: Document Selection** (OpenRouter — DeepSeek V3)
-Receives a lightweight catalog of all documents (titles, summaries, top-level node summaries -- no full text). It reasons about which 1-3 documents are most likely to contain the answer.
+| Task | Model | Provider | Cost |
+|---|---|---|---|
+| Tree building (ingestion) | DeepSeek Chat V3 | OpenRouter | ~$0.002/doc |
+| Step 1 — Doc Selection | DeepSeek Chat V3 | OpenRouter | ~$0.001/query |
+| Step 2 — Node Selection | Qwen3 30B A3B | OpenRouter | ~$0.003/query |
+| Step 3 — Answer Generation | Claude Sonnet | Anthropic | ~$0.006/query |
+| **Total** | | | **~$0.01/query** |
 
-**Step 2: Node Navigation** (OpenRouter — Qwen3 30B)
-For each selected document, the LLM receives the full tree structure *without* raw text -- just node titles, summaries, depths, and hierarchy. It navigates the tree like a human scanning a table of contents, selecting the most relevant leaf nodes.
+Answer generation stays on Claude Sonnet — quality matters for user-facing output.
 
-**Step 3: Answer Generation** (Claude Sonnet — never rerouted)
-The raw text of selected nodes is extracted from the JSONB tree, assembled with source attribution, and sent to Claude for a final cited answer.
+### Fallback Chains
 
-This approach has several advantages over vector similarity:
-- Preserves document structure and context hierarchy
-- No embedding costs or vector database required
-- The LLM's reasoning is transparent and inspectable
-- Works well with documents that have clear organizational structure
-- Delta ingestion via content hashing (only re-process changed files)
-- Hybrid inference reduces cost ~80% on Steps 1-2 without quality loss
+Every step has automatic provider fallback:
+- Query Steps 1+2: OpenRouter → Anthropic
+- Ingestion: OpenRouter → Anthropic (streaming)
+- `INFERENCE_MODE=claude-only` reverts to full Anthropic routing (debug mode)
 
-## Current Stats
+### Stack
 
-- **Documents indexed:** 33
-- **Total tree nodes:** ~1,066
-- **Inference mode:** hybrid (OpenRouter Steps 1-2, Claude Step 3)
-- **Ingestion chain:** OpenRouter (DeepSeek) primary, Anthropic streaming fallback
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| AI — Steps 1+2 | OpenRouter (DeepSeek V3, Qwen3 30B) |
+| AI — Step 3 | Anthropic Claude (claude-sonnet-4-6) |
+| Database | Supabase (PostgreSQL + JSONB) |
+| Portfolio Data | Notion REST API |
+| Ingestion CLI | TypeScript, tsx, custom vault reader |
+| Deployment | Vercel (CI/CD via GitHub) |
+| Knowledge Source | Obsidian markdown vault (33 docs, ~1,066 nodes) |
+| Portfolio Source | Notion Book of Work (64 projects) |
 
-## Setup
+---
 
-### 1. Clone and install
+## Ingestion Pipeline
+
+A CLI tool processes the Obsidian vault and builds PageIndex trees:
 
 ```bash
-git clone <repo-url> tpmo-copilot
-cd tpmo-copilot
-
-npm install
-cd ingestion && npm install && cd ..
-```
-
-### 2. Set up Supabase
-
-Create a Supabase project at [supabase.com](https://supabase.com), then run the migration in the SQL Editor:
-
-```sql
--- Paste the contents of supabase/migrations/001_initial_schema.sql
-```
-
-This creates three tables: `documents`, `doc_trees`, and `query_log` with indexes and RLS policies.
-
-### 3. Configure environment
-
-```bash
-cp .env.example .env.local
-```
-
-Fill in your credentials:
-
-```
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-
-# Anthropic (Claude API — used for Step 3 + ingestion fallback)
-ANTHROPIC_API_KEY=sk-ant-...
-
-# OpenRouter (used for Steps 1-2 + ingestion primary)
-OPENROUTER_API_KEY=sk-or-v1-...
-
-# Vault ingestion
-VAULT_PATH=/path/to/your/obsidian/vault
-
-# API protection
-INGEST_SECRET=your-random-secret
-
-# App config
-NEXT_PUBLIC_APP_NAME=TPMO Copilot
-MAX_DOCS_PER_QUERY=5
-MAX_NODES_PER_DOC=8
-
-# Hybrid inference (V0.5)
-INFERENCE_MODE=hybrid
-OPENROUTER_DOC_SELECT_MODEL=deepseek/deepseek-chat-v3-0324
-OPENROUTER_NODE_SELECT_MODEL=qwen/qwen3-30b-a3b
-OPENROUTER_TREE_MODEL=deepseek/deepseek-chat-v3-0324
-```
-
-Also copy environment variables to `ingestion/.env` for the CLI:
-
-```bash
-cp .env.local ingestion/.env
-```
-
-### 4. Ingest your vault
-
-```bash
-cd ingestion
-
-# Full vault ingestion
-npx tsx src/index.ts --vault /path/to/your/obsidian/vault --verbose
+# Ingest full vault
+npm run ingest -- --vault "/path/to/vault"
 
 # Single file
-npx tsx src/index.ts --file /path/to/file.md
+npm run ingest -- --file "/path/to/file.md"
 
-# Dry run (parse + build trees, don't write to Supabase)
-npx tsx src/index.ts --vault /path/to/vault --dry-run
-
-# Force re-ingest (ignore content hashes)
-npx tsx src/index.ts --vault /path/to/vault --force
+# Dry run (no DB writes)
+npm run ingest -- --file "/path/to/file.md" --dry-run
 ```
 
-### 5. Run dev server
+SHA256 hash-based delta detection — unchanged files are skipped automatically. Vault auto-ingests every 8 hours via macOS launchd.
 
-```bash
-npm run dev
-# Open http://localhost:3000
-```
+---
 
-### 6. Deploy to Vercel
+## Notion Sync
 
-```bash
-npx vercel
-# Set environment variables in Vercel dashboard
-```
+Portfolio data syncs from Notion via REST API:
 
-## API Endpoints
+- **Manual:** Admin panel → "Sync from Notion Now"
+- **Automatic:** Nightly at 6am UTC via Vercel cron
 
-| Method | Path          | Description                          |
-|--------|---------------|--------------------------------------|
-| POST   | /api/query    | Run RAG query (rate-limited: 10/min) |
-| POST   | /api/ingest   | Remote ingestion trigger (V1 stub)   |
-| GET    | /api/health   | System health + document count       |
+---
 
-**Query example:**
+## Environment Variables
 
-```bash
-curl -X POST http://localhost:3000/api/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What was the outcome of the Snowflake migration?"}'
-```
+| Variable | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | Claude API (Step 3 + ingestion fallback) |
+| `OPENROUTER_API_KEY` | OpenRouter (Steps 1, 2, ingestion primary) |
+| `NOTION_API_KEY` | Notion integration token |
+| `NOTION_BOW_DATABASE_ID` | Book of Work database ID |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin key |
+| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` |
+| `OPENROUTER_DOC_SELECT_MODEL` | `deepseek/deepseek-chat-v3-0324` |
+| `OPENROUTER_NODE_SELECT_MODEL` | `qwen/qwen3-30b-a3b` |
+| `INFERENCE_MODE` | `hybrid` or `claude-only` |
+| `INGEST_SECRET` | Auth token for sync API route |
+| `CRON_SECRET` | Auth token for Vercel cron |
+| `MAX_DOCS_PER_QUERY` | `5` |
+| `MAX_NODES_PER_DOC` | `8` |
 
-## Example Queries
+---
 
-- "What was the outcome of the Snowflake security hardening program?"
-- "What is my Q2 2026 capacity situation?"
-- "Summarize my most impactful TPM project in 2025"
-- "What STAR stories do I have about stakeholder conflict?"
-- "List all action items from the Kashmir retrospective"
-- "What metrics did I track for the platform reliability initiative?"
+## Roadmap
 
-## Project Structure
+| Version | Description | Status |
+|---|---|---|
+| V0 | Vectorless RAG over Obsidian vault | ✅ Complete |
+| V0.5 | Hybrid inference — OpenRouter + Anthropic, 90% cost reduction | ✅ Complete |
+| V1 | Notion integration — live portfolio data + dual-mode routing | ✅ Complete |
+| V2 | Streaming responses + conversational memory | 🔜 Next |
+| V3 | Discord interface + proactive alerts | Planned |
 
-```
-tpmo-copilot/
-  app/
-    layout.tsx, globals.css
-    (landing)/
-      layout.tsx, page.tsx            Landing page
-    chat/
-      page.tsx                        Chat UI page
-    api/query/route.ts                POST  RAG query endpoint
-    api/ingest/route.ts               POST  ingestion trigger (V1 stub)
-    api/health/route.ts               GET   health check
-  lib/
-    supabase.ts                       Supabase clients (anon + admin)
-    claude.ts                         Anthropic client + callClaude helper
-    openrouter.ts                     OpenRouter client for Steps 1-2
-    rag/
-      index.ts                        runRAGQuery orchestrator
-      document-selector.ts            Step 1: catalog-based doc selection
-      node-selector.ts                Step 2: tree-based node navigation
-      answer-generator.ts             Step 3: context assembly + answer
-  components/
-    ChatInterface.tsx                  Chat UI with state management
-    MessageBubble.tsx                  Message rendering + reasoning toggle
-    SourceCitation.tsx                 Source reference cards
-    landing/
-      Hero.tsx, Features.tsx,          Landing page components
-      CTA.tsx, Nav.tsx, Footer.tsx
-  ingestion/
-    src/
-      index.ts                        CLI orchestrator (--vault, --file, --force, --dry-run)
-      vault-reader.ts                 Recursive .md reader + frontmatter parsing
-      tree-builder.ts                 LLM-powered PageIndex tree builder (fallback chain)
-      openrouter-client.ts            OpenRouter client for ingestion
-      ollama-client.ts                Ollama client (preserved, not in active chain)
-      supabase-client.ts              Upsert functions for documents + trees
-      utils/hash.ts                   SHA-256 content hashing
-      utils/markdown-parser.ts        Remark-based heading extraction
-      utils/validate-tree.ts          Tree structure validation
-  supabase/
-    migrations/
-      001_initial_schema.sql          Tables, indexes, RLS policies
-```
+---
 
-## Version History
+## Engineering Notes
 
-| Version | Status | Description |
-|---------|--------|-------------|
-| V0      | Done   | Claude-only RAG pipeline, Obsidian vault ingestion, chat UI |
-| V0.5    | Done   | Hybrid inference (OpenRouter Steps 1-2, Claude Step 3), streaming fallback, truncation detection |
-| V1      | Next   | Notion integration (live portfolio sync from LendingTree Book of Work) |
+**Why vectorless RAG (PageIndex)?** No vector database infrastructure, no embedding costs, no re-embedding on document updates. Retrieval works by reasoning over AI-generated hierarchical summaries rather than cosine similarity.
 
-## What's Next (V1)
+**Why OpenRouter over direct provider APIs?** Single key, single billing account, 300+ models. A provider outage or pricing change requires one env var update, not a dependency migration.
 
-See [HANDOFF-V1.md](./HANDOFF-V1.md) for the full V1 plan:
+**Why keep Claude for answer generation?** Steps 1 and 2 are ranking/filtering tasks — structured, deterministic, commodity work. Step 3 is synthesis — the output users judge quality by. The cost savings from routing Steps 1+2 to cheaper models subsidize keeping the best model where it matters.
 
-- Connect to live Notion portfolio data (LendingTree Book of Work)
-- Nightly sync via Vercel cron
-- Mode detection in RAG pipeline (vault query vs portfolio query)
-- New Supabase tables: `projects`, `sync_log`
-- Admin UI for sync status
+**Why Notion over a custom database?** Notion already had the Book of Work structured as a proper database. First-class REST API, native editing UI, no data migration required. The integration required an API connection, not a rebuild.
+
+**How does the two-pass fallback work?** If the mode detector classifies a query as "portfolio", the orchestrator first calls `hasPortfolioData()` — a lightweight Supabase count query. If 0 records match, the query falls through to the vault RAG pipeline automatically. This prevents present-tense questions about historical projects from returning empty portfolio results.
+
+---
+
+*Built by Quentin Liggins — Technical Program Manager, LendingTree*  
+*GitHub: github.com/qliggs/tpmo-copilot*
