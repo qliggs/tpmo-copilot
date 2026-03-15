@@ -3,86 +3,250 @@
 import { StickyScroll } from "@/components/ui/sticky-scroll-reveal";
 
 // ---------------------------------------------------------------------------
-// Pipeline step content
+// Shared SVG styling constants
 // ---------------------------------------------------------------------------
 
-const PIPELINE_STEPS = [
+const BOX_FILL = "rgba(255,255,255,0.06)";
+const BOX_STROKE = "rgba(255,255,255,0.12)";
+const LABEL_COLOR = "rgba(226,232,240,0.9)";
+const DIM_COLOR = "rgba(148,163,184,0.7)";
+const ACCENT_LINE = "rgba(226,232,240,0.4)";
+
+// ---------------------------------------------------------------------------
+// Diagram 1 — The Query Pipeline
+// ---------------------------------------------------------------------------
+
+function QueryPipelineDiagram() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+      <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
+        {/* User Question */}
+        <rect x="70" y="4" width="140" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="21" textAnchor="middle" fill={LABEL_COLOR} fontSize="9" fontFamily="monospace">User Question</text>
+
+        {/* Arrow 1 */}
+        <line x1="140" y1="30" x2="140" y2="42" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,40 140,46 144,40" fill={ACCENT_LINE} />
+
+        {/* Step 1 */}
+        <rect x="20" y="48" width="240" height="32" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="30" y="62" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Step 1</text>
+        <text x="30" y="74" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Doc Selector — DeepSeek V3 — 27 docs → top 5</text>
+
+        {/* Arrow 2 */}
+        <line x1="140" y1="80" x2="140" y2="92" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,90 140,96 144,90" fill={ACCENT_LINE} />
+
+        {/* Step 2 */}
+        <rect x="20" y="98" width="240" height="32" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="30" y="112" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Step 2</text>
+        <text x="30" y="124" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Node Selector — Qwen3 30B — 5 docs → top 8 nodes</text>
+
+        {/* Arrow 3 */}
+        <line x1="140" y1="130" x2="140" y2="142" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,140 140,146 144,140" fill={ACCENT_LINE} />
+
+        {/* Step 3 */}
+        <rect x="20" y="148" width="240" height="32" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="30" y="162" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Step 3</text>
+        <text x="30" y="174" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Answer Gen — Claude Sonnet — 8 nodes → answer</text>
+
+        {/* Arrow 4 */}
+        <line x1="140" y1="180" x2="140" y2="192" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,190 140,196 144,190" fill={ACCENT_LINE} />
+
+        {/* Response */}
+        <rect x="60" y="198" width="160" height="20" rx="4" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
+        <text x="140" y="212" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Response + Citations</text>
+      </svg>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Diagram 2 — The Ingestion Pipeline
+// ---------------------------------------------------------------------------
+
+function IngestionDiagram() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+      <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
+        {/* Obsidian files */}
+        <rect x="60" y="6" width="160" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="23" textAnchor="middle" fill={LABEL_COLOR} fontSize="9" fontFamily="monospace">Obsidian .md files</text>
+
+        <line x1="140" y1="32" x2="140" y2="46" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,44 140,50 144,44" fill={ACCENT_LINE} />
+
+        {/* vault-reader */}
+        <rect x="30" y="52" width="220" height="30" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="66" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">vault-reader.ts</text>
+        <text x="140" y="77" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">SHA256 delta detection</text>
+
+        <line x1="140" y1="82" x2="140" y2="96" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,94 140,100 144,94" fill={ACCENT_LINE} />
+
+        {/* tree-builder */}
+        <rect x="30" y="102" width="220" height="30" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="116" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">tree-builder.ts</text>
+        <text x="140" y="127" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">AI builds PageIndex JSON tree</text>
+
+        <line x1="140" y1="132" x2="140" y2="146" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,144 140,150 144,144" fill={ACCENT_LINE} />
+
+        {/* validate */}
+        <rect x="60" y="152" width="160" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="169" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">validate-tree.ts</text>
+
+        <line x1="140" y1="178" x2="140" y2="192" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,190 140,196 144,190" fill={ACCENT_LINE} />
+
+        {/* Supabase */}
+        <rect x="40" y="198" width="200" height="20" rx="4" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
+        <text x="140" y="212" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Supabase — documents + doc_trees</text>
+      </svg>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Diagram 3 — Dual-Source Routing
+// ---------------------------------------------------------------------------
+
+function DualSourceDiagram() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+      <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
+        {/* User Question */}
+        <rect x="70" y="4" width="140" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="21" textAnchor="middle" fill={LABEL_COLOR} fontSize="9" fontFamily="monospace">User Question</text>
+
+        <line x1="140" y1="30" x2="140" y2="44" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,42 140,48 144,42" fill={ACCENT_LINE} />
+
+        {/* Mode Detector */}
+        <rect x="50" y="50" width="180" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="65" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">Mode Detector — keyword classifier</text>
+
+        {/* Branch lines */}
+        <line x1="100" y1="76" x2="100" y2="100" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <line x1="180" y1="76" x2="180" y2="100" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="96,98 100,104 104,98" fill={ACCENT_LINE} />
+        <polygon points="176,98 180,104 184,98" fill={ACCENT_LINE} />
+
+        {/* Mode A */}
+        <rect x="20" y="106" width="120" height="44" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="80" y="122" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Mode A — Vault RAG</text>
+        <text x="80" y="134" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">3-step pipeline</text>
+        <text x="80" y="144" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Obsidian docs</text>
+
+        {/* Mode B */}
+        <rect x="150" y="106" width="120" height="44" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="210" y="122" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Mode B — Portfolio</text>
+        <text x="210" y="134" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">SQL query</text>
+        <text x="210" y="144" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Notion data</text>
+
+        {/* Merge lines */}
+        <line x1="80" y1="150" x2="80" y2="170" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <line x1="210" y1="150" x2="210" y2="170" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <line x1="80" y1="170" x2="210" y2="170" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <line x1="140" y1="170" x2="140" y2="184" stroke={ACCENT_LINE} strokeWidth="1.5" />
+        <polygon points="136,182 140,188 144,182" fill={ACCENT_LINE} />
+
+        {/* Claude */}
+        <rect x="40" y="190" width="200" height="26" rx="4" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
+        <text x="140" y="207" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Claude Sonnet — Answer Generator</text>
+      </svg>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Diagram 4 — Hybrid Inference Routing (table)
+// ---------------------------------------------------------------------------
+
+function InferenceTableDiagram() {
+  const rows = [
+    { task: "Tree Building", model: "DeepSeek V3", provider: "OpenRouter", cost: "$0.002/doc" },
+    { task: "Doc Selection", model: "DeepSeek V3", provider: "OpenRouter", cost: "$0.001/q" },
+    { task: "Node Select", model: "Qwen3 30B", provider: "OpenRouter", cost: "$0.003/q" },
+    { task: "Answer Gen", model: "Claude Sonnet", provider: "Anthropic", cost: "$0.006/q" },
+  ];
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+      <svg viewBox="0 0 280 200" className="w-full h-full" fill="none">
+        {/* Header row */}
+        <rect x="4" y="10" width="272" height="22" rx="3" fill="rgba(255,255,255,0.04)" />
+        <text x="14" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">TASK</text>
+        <text x="90" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">MODEL</text>
+        <text x="175" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">PROVIDER</text>
+        <text x="245" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">COST</text>
+
+        {/* Data rows */}
+        {rows.map((row, i) => {
+          const y = 42 + i * 36;
+          return (
+            <g key={row.task}>
+              <rect x="4" y={y} width="272" height="30" rx="3" fill={BOX_FILL} stroke={BOX_STROKE} />
+              <text x="14" y={y + 19} fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">{row.task}</text>
+              <text x="90" y={y + 19} fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">{row.model}</text>
+              <text x="175" y={y + 19} fill={DIM_COLOR} fontSize="7" fontFamily="monospace">{row.provider}</text>
+              <text x="245" y={y + 19} fill="rgba(226,232,240,0.8)" fontSize="8" fontWeight="600" fontFamily="monospace">{row.cost}</text>
+            </g>
+          );
+        })}
+
+        {/* Total */}
+        <line x1="4" y1="190" x2="276" y2="190" stroke={BOX_STROKE} />
+        <text x="175" y="204" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Total/query</text>
+        <text x="245" y="204" fill={LABEL_COLOR} fontSize="9" fontWeight="600" fontFamily="monospace">~$0.01</text>
+      </svg>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline step content for StickyScroll
+// ---------------------------------------------------------------------------
+
+const PIPELINE_SECTIONS = [
   {
-    title: "1. Document Selection",
+    title: "3 steps. Narrowing precision.",
     description:
-      "Your question is analyzed against the full catalog of indexed documents. An AI reasoning step identifies which files are most likely to contain the answer — no keyword matching or vector similarity required.",
-    content: (
-      <div className="flex h-full w-full items-center justify-center rounded-md bg-gradient-to-br from-cyan-500 to-emerald-500">
-        <div className="flex flex-col items-center gap-3 text-white">
-          <svg
-            className="h-12 w-12"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-            />
-          </svg>
-          <span className="text-sm font-semibold">Catalog Scan</span>
-        </div>
-      </div>
-    ),
+      "Every query flows through document selection, node selection, then answer generation. Each step narrows the context window so the final answer is grounded in the most relevant 8 content blocks — not entire documents.",
+    content: <QueryPipelineDiagram />,
   },
   {
-    title: "2. Node Navigation",
+    title: "Documents become structured trees.",
     description:
-      "Each selected document is structured as a navigable tree. The system walks the hierarchy — headings, sub-sections, bullet points — and selects the exact nodes that are relevant to your question.",
-    content: (
-      <div className="flex h-full w-full items-center justify-center rounded-md bg-gradient-to-br from-pink-500 to-indigo-500">
-        <div className="flex flex-col items-center gap-3 text-white">
-          <svg
-            className="h-12 w-12"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
-            />
-          </svg>
-          <span className="text-sm font-semibold">Tree Traversal</span>
-        </div>
-      </div>
-    ),
+      "The ingestion CLI walks your Obsidian vault, computes SHA256 hashes for delta detection, and calls an AI to build a PageIndex tree for each document. Trees are hierarchical JSON — root summary, section nodes, leaf content blocks. Built once, queried forever.",
+    content: <IngestionDiagram />,
   },
   {
-    title: "3. Answer Generation",
+    title: "Vault history or live portfolio — automatically.",
     description:
-      "The selected nodes' raw text is assembled as context for Claude. The answer is streamed token-by-token with full source citations, so you know exactly where every claim comes from.",
-    content: (
-      <div className="flex h-full w-full items-center justify-center rounded-md bg-gradient-to-br from-orange-500 to-yellow-500">
-        <div className="flex flex-col items-center gap-3 text-white">
-          <svg
-            className="h-12 w-12"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
-            />
-          </svg>
-          <span className="text-sm font-semibold">Stream Answer</span>
-        </div>
-      </div>
-    ),
+      "A keyword classifier detects whether a question is about past projects (vault RAG) or current portfolio state (Notion SQL). A two-pass fallback ensures questions about historical projects never return empty portfolio results.",
+    content: <DualSourceDiagram />,
+  },
+  {
+    title: "Right model for each task.",
+    description:
+      "Not every task needs frontier model quality. Selection steps use fast, cheap models. Synthesis stays on Claude. Automatic fallback chains mean the system degrades gracefully if any provider is unavailable.",
+    content: <InferenceTableDiagram />,
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Section labels for the left-side context
+// ---------------------------------------------------------------------------
+
+const SECTION_LABELS = [
+  "The Query Pipeline",
+  "The Ingestion Pipeline",
+  "Dual-Source Routing",
+  "Hybrid Inference Routing",
+] as const;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -93,19 +257,31 @@ export default function HowItWorks() {
     <section id="how-it-works" className="px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-12">
-          <p className="font-mono text-sm tracking-widest text-blue-400 uppercase">
+          <p className="font-mono text-sm tracking-widest text-arctic-muted uppercase">
             How It Works
           </p>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Three-step reasoning pipeline
+            Under the hood
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-gray-400">
-            Not just vector search. TPMO Copilot reasons through your document
-            structure to find precise answers.
+          <p className="mx-auto mt-4 max-w-2xl text-arctic-muted">
+            Four architectural decisions that make TPMO Copilot fast, cheap,
+            and accurate.
           </p>
         </div>
 
-        <StickyScroll content={PIPELINE_STEPS} />
+        {/* Section labels above the scroll */}
+        <div className="hidden lg:flex gap-2 mb-4 justify-center">
+          {SECTION_LABELS.map((label) => (
+            <span
+              key={label}
+              className="rounded-full border border-white/[0.07] px-3 py-1 font-mono text-[10px] text-arctic-dim"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+
+        <StickyScroll content={PIPELINE_SECTIONS} />
       </div>
     </section>
   );

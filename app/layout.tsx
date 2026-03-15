@@ -28,7 +28,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-gray-950 text-gray-100 antialiased">
+      <body className="bg-graphite-950 text-slate-100 antialiased">
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

@@ -29,7 +29,6 @@ function LoginForm() {
     });
 
     if (result?.ok) {
-      // Hard navigation to ensure the edge cookie is read by middleware
       window.location.href = callbackUrl;
       return;
     } else {
@@ -43,7 +42,7 @@ function LoginForm() {
       <div>
         <label
           htmlFor="username"
-          className="block text-xs font-medium text-gray-400 mb-1.5"
+          className="block text-xs font-medium text-arctic-muted mb-1.5"
         >
           Username
         </label>
@@ -54,7 +53,7 @@ function LoginForm() {
           onChange={(e) => setUsername(e.target.value)}
           required
           autoFocus
-          className="w-full px-3 py-2.5 bg-gray-900 border border-gray-800 rounded-lg text-sm text-gray-100 font-mono placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25 transition-colors"
+          className="w-full px-3 py-2.5 bg-graphite-900 border border-white/[0.07] rounded-lg text-sm text-slate-100 font-mono placeholder-arctic-dim focus:outline-none focus:border-arctic-muted/40 focus:ring-1 focus:ring-arctic-muted/20 transition-colors"
           placeholder="Enter username"
         />
       </div>
@@ -62,7 +61,7 @@ function LoginForm() {
       <div>
         <label
           htmlFor="password"
-          className="block text-xs font-medium text-gray-400 mb-1.5"
+          className="block text-xs font-medium text-arctic-muted mb-1.5"
         >
           Password
         </label>
@@ -72,7 +71,7 @@ function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full px-3 py-2.5 bg-gray-900 border border-gray-800 rounded-lg text-sm text-gray-100 font-mono placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25 transition-colors"
+          className="w-full px-3 py-2.5 bg-graphite-900 border border-white/[0.07] rounded-lg text-sm text-slate-100 font-mono placeholder-arctic-dim focus:outline-none focus:border-arctic-muted/40 focus:ring-1 focus:ring-arctic-muted/20 transition-colors"
           placeholder="Enter password"
         />
       </div>
@@ -82,7 +81,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-sm font-medium text-white rounded-lg transition-colors cursor-pointer"
+        className="w-full py-2.5 bg-arctic hover:bg-white text-graphite-950 disabled:bg-graphite-800 disabled:text-arctic-dim disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors cursor-pointer"
       >
         {loading ? "Signing in..." : "Sign in"}
       </button>
@@ -96,22 +95,20 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-graphite-950 px-4">
       <div className="w-full max-w-sm">
-        {/* Brand header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-arctic text-xs font-bold text-graphite-950">
               TC
             </div>
           </div>
-          <h1 className="text-xl font-semibold text-gray-100 tracking-tight font-mono">
+          <h1 className="text-xl font-semibold text-slate-100 tracking-tight font-mono">
             TPMO Copilot
           </h1>
-          <p className="text-xs text-gray-500 mt-1">Sign in to continue</p>
+          <p className="text-xs text-arctic-dim mt-1">Sign in to continue</p>
         </div>
 
-        {/* Form wrapped in Suspense for useSearchParams */}
         <Suspense>
           <LoginForm />
         </Suspense>

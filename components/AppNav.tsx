@@ -23,14 +23,14 @@ export default function AppNav() {
   const pathname = usePathname();
 
   return (
-    <header className="shrink-0 border-b border-gray-800/60 bg-gray-900">
+    <header className="shrink-0 border-b border-white/[0.07] bg-graphite-900">
       <nav className="flex items-center justify-between px-6 py-3">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-[10px] font-bold text-white">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-arctic text-[10px] font-bold text-graphite-950">
             TC
           </div>
-          <span className="font-mono text-sm font-medium tracking-tight text-gray-100">
+          <span className="font-mono text-sm font-medium tracking-tight text-slate-100">
             TPMO Copilot
           </span>
         </Link>
@@ -47,8 +47,8 @@ export default function AppNav() {
                 className={cn(
                   "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-gray-800 text-gray-100"
-                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50",
+                    ? "bg-graphite-800 text-slate-100"
+                    : "text-arctic-muted hover:text-slate-200 hover:bg-graphite-800/50",
                 )}
               >
                 {label}
@@ -60,7 +60,7 @@ export default function AppNav() {
         {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+          className="text-xs text-arctic-dim hover:text-arctic-muted transition-colors cursor-pointer"
         >
           Sign out
         </button>

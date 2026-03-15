@@ -256,9 +256,9 @@ export default function ChatInterface() {
             <div className="bg-gray-800 border border-gray-700/50 rounded-lg px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                  <span className="w-1.5 h-1.5 bg-arctic rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 bg-arctic rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 bg-arctic rounded-full animate-bounce [animation-delay:300ms]" />
                 </div>
                 <span className="text-xs text-gray-500">Searching documents...</span>
               </div>
@@ -281,12 +281,12 @@ export default function ChatInterface() {
             placeholder="Ask a question..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-lg bg-gray-800 border border-gray-700 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none rounded-lg bg-gray-800 border border-gray-700 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-arctic-muted/40 focus:ring-1 focus:ring-arctic-muted/20 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             onClick={() => submitQuestion(inputValue)}
             disabled={isLoading || inputValue.trim().length === 0}
-            className="shrink-0 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 px-4 py-2.5 text-sm font-medium text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="shrink-0 rounded-lg bg-arctic hover:bg-white text-graphite-950 disabled:bg-graphite-800 disabled:text-arctic-dim px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
             Send
           </button>
@@ -311,7 +311,7 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
       <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700/50 flex items-center justify-center mb-4">
-        <span className="text-blue-400 text-lg">?</span>
+        <span className="text-arctic text-lg">?</span>
       </div>
       <h2 className="text-sm font-medium text-gray-300 mb-1">
         Ask your knowledge vault

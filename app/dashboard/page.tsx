@@ -76,7 +76,7 @@ function TeamLoadSection({
               </div>
               <div className="h-2 rounded-full bg-gray-800">
                 <div
-                  className="h-full rounded-full bg-blue-500 transition-all"
+                  className="h-full rounded-full bg-arctic transition-all"
                   style={{
                     width: `${Math.round((entry.resources / maxResources) * 100)}%`,
                   }}
@@ -98,7 +98,7 @@ function StatusSection({
   const total = statusBreakdown.reduce((sum, s) => sum + s.count, 0);
 
   const STATUS_COLORS: Record<string, string> = {
-    "In Progress": "bg-blue-500",
+    "In Progress": "bg-arctic",
     "Not Started": "bg-gray-500",
     "On Track": "bg-emerald-500",
     "At Risk": "bg-amber-500",
@@ -205,7 +205,7 @@ function ProjectTable({
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-8 text-center">
         <p className="text-sm text-gray-500">
           No projects found. Run a Notion sync from the{" "}
-          <a href="/admin" className="text-blue-400 hover:underline">
+          <a href="/admin" className="text-arctic hover:underline">
             Admin
           </a>{" "}
           page to populate the dashboard.
@@ -217,7 +217,7 @@ function ProjectTable({
   const PRIORITY_COLORS: Record<string, string> = {
     P0: "text-red-400",
     P1: "text-amber-400",
-    P2: "text-blue-400",
+    P2: "text-arctic",
     P3: "text-gray-400",
   };
 

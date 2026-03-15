@@ -63,7 +63,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             {message.reasoning && (
               <button
                 onClick={() => setShowReasoning((prev) => !prev)}
-                className="text-[10px] font-mono text-gray-500 hover:text-blue-400 transition-colors cursor-pointer"
+                className="text-[10px] font-mono text-gray-500 hover:text-arctic transition-colors cursor-pointer"
               >
                 {showReasoning ? "Hide reasoning" : "Show reasoning"}
               </button>

@@ -3,89 +3,64 @@
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 // ---------------------------------------------------------------------------
-// Feature data
+// Feature data — 5 technical capabilities
 // ---------------------------------------------------------------------------
 
 const FEATURES = [
   {
-    title: "Instant Knowledge Retrieval",
+    title: "Vectorless RAG (PageIndex)",
     description:
-      "Ask questions in plain English about your programs, processes, or past decisions. Get precise answers with source citations — not hallucinations.",
+      "Instead of embedding documents into vectors, an AI builds a hierarchical JSON tree representing each document's structure. Retrieval works by reasoning over summaries — no vector database, no embedding costs, no re-indexing.",
     icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-        />
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z" />
       </svg>
     ),
+    wide: true,
   },
   {
-    title: "Portfolio Intelligence",
+    title: "3-Step Query Pipeline",
     description:
-      "Surface cross-program dependencies, resource conflicts, and timeline risks before they become blockers. See the full picture your spreadsheets can't show.",
+      "Every query narrows: all docs -> top 5 -> top 8 nodes -> answer. The system never dumps entire documents into a prompt.",
     icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6"
-        />
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
       </svg>
     ),
+    wide: false,
   },
   {
-    title: "Decision Audit Trail",
+    title: "Hybrid Inference",
     description:
-      'Every trade-off, escalation, and architectural decision is indexed and searchable. When leadership asks "why did we choose X?" — you\'ll have the answer in seconds.',
+      "OpenRouter (DeepSeek V3 + Qwen3) handles selection steps. Claude Sonnet handles synthesis. ~$0.01/query vs $0.15/query with a single-model approach.",
     icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
-        />
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
       </svg>
     ),
+    wide: false,
   },
   {
-    title: "Always Current",
+    title: "Dual-Source Intelligence",
     description:
-      "Ingests from your existing Obsidian vaults, Notion workspaces, and Markdown docs. No manual data entry — your knowledge base stays in sync automatically.",
+      "33 Obsidian docs (vault history) + 64 live Notion projects (Book of Work). Mode detection routes each query to the right source automatically.",
     icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
-        />
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
       </svg>
     ),
+    wide: false,
+  },
+  {
+    title: "Conversational Memory",
+    description:
+      "Session-scoped history stored in Supabase. Follow-up questions build on prior answers. 10-turn context window.",
+    icon: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+      </svg>
+    ),
+    wide: false,
   },
 ] as const;
 
@@ -98,40 +73,42 @@ export default function Features() {
     <section id="features" className="px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
-          <p className="font-mono text-sm tracking-widest text-blue-400 uppercase">
-            Capabilities
+          <p className="font-mono text-sm tracking-widest text-arctic-muted uppercase">
+            Architecture
           </p>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Built for how TPMs actually work
+            What makes this different
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-gray-400">
-            Not another generic chatbot. TPMO Copilot understands program
-            management context — dependencies, milestones, risk registers, and
-            stakeholder decisions.
+          <p className="mx-auto mt-4 max-w-2xl text-arctic-muted">
+            Not another wrapper around an LLM. TPMO Copilot uses structured
+            document trees, multi-model routing, and dual-source intelligence
+            to deliver grounded answers at minimal cost.
           </p>
         </div>
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2">
+        {/* Grid: first card full-width, rest 2-col */}
+        <div className="mt-16 grid gap-6 sm:grid-cols-2">
           {FEATURES.map((feature) => (
             <div
               key={feature.title}
-              className="relative rounded-xl border border-gray-800 bg-gray-800/30 p-6"
+              className={`relative rounded-xl border border-white/[0.07] bg-graphite-800/30 p-6 ${feature.wide ? "sm:col-span-2" : ""}`}
             >
               <GlowingEffect
-                spread={40}
+                spread={60}
                 glow
                 disabled={false}
-                proximity={64}
+                proximity={80}
                 inactiveZone={0.01}
+                borderWidth={4}
               />
               <div className="relative z-10">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/10 text-blue-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-arctic/10 text-arctic">
                   {feature.icon}
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-white">
                   {feature.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                <p className="mt-2 text-sm leading-relaxed text-arctic-muted">
                   {feature.description}
                 </p>
               </div>
