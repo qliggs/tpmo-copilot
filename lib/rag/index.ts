@@ -7,9 +7,13 @@
 import { supabaseAdmin as getAdmin } from "@/lib/supabase";
 import { selectDocuments } from "./document-selector";
 import { selectNodes, type SelectedNode } from "./node-selector";
-import { generateAnswer, type Source } from "./answer-generator";
+import { generateAnswer, streamAnswer, type Source } from "./answer-generator";
 import { detectQueryMode } from "./mode-detector";
-import { queryPortfolio, hasPortfolioData } from "./portfolio-query";
+import {
+  queryPortfolio,
+  streamPortfolioAnswer,
+  hasPortfolioData,
+} from "./portfolio-query";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -171,5 +175,138 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
   // Log to Supabase (fire-and-forget, don't block response)
   await logQuery(question, result);
 
+  return result;
+}
+
+/**
+ * Streaming variant of runRAGQuery.
+ *
+ * Steps 1-2 run to completion (blocking), then Step 3 streams tokens
+ * via the onChunk callback. Returns the full RAGResult once the stream
+ * completes (needed for query logging).
+ */
+export async function streamRAGQuery(
+  question: string,
+  onChunk: (text: string) => void,
+): Promise<RAGResult> {
+  const start = performance.now();
+  const reasoningParts: string[] = [];
+  let llmCalls = 0;
+
+  // -- Mode Detection ---------------------------------------------------------
+  const mode = detectQueryMode(question);
+  reasoningParts.push(`[Mode Detection] Query classified as: ${mode}`);
+
+  // -- Mode B: Portfolio Query (with fallback to vault) ------------------------
+  if (mode === "portfolio") {
+    const hasData = await hasPortfolioData(getAdmin());
+
+    if (hasData) {
+      const portfolioResult = await streamPortfolioAnswer(
+        question,
+        getAdmin(),
+        onChunk,
+      );
+      llmCalls++;
+      reasoningParts.push(
+        `[Portfolio Query] Queried ${portfolioResult.projectCount} projects from the Book of Work.`,
+      );
+
+      const result: RAGResult = Object.freeze({
+        answer: portfolioResult.answer,
+        sources: [
+          {
+            filename: "Book of Work (Notion)",
+            section_path: ["Portfolio Data"],
+          },
+        ],
+        reasoning: reasoningParts.join("\n\n"),
+        latency_ms: elapsed(start),
+        total_llm_calls: llmCalls,
+      });
+
+      await logQuery(question, result);
+      return result;
+    }
+
+    reasoningParts.push(
+      "[Portfolio Fallback] No projects in database. Falling back to vault RAG.",
+    );
+  }
+
+  // -- Mode A: Vault RAG (Steps 1-2 blocking, Step 3 streaming) ---------------
+
+  // -- Step 1: Document Selection -------------------------------------------
+  const docResult = await selectDocuments(question, getAdmin());
+  llmCalls++;
+  reasoningParts.push(`[Document Selection] ${docResult.thinking}`);
+
+  if (docResult.selected.length === 0) {
+    const fallback = "No relevant documents found in the knowledge base.";
+    onChunk(fallback);
+    const result: RAGResult = Object.freeze({
+      answer: fallback,
+      sources: [],
+      reasoning: reasoningParts.join("\n\n"),
+      latency_ms: elapsed(start),
+      total_llm_calls: llmCalls,
+    });
+    await logQuery(question, result);
+    return result;
+  }
+
+  // -- Step 2: Node Selection (per document) --------------------------------
+  const allNodes: SelectedNode[] = [];
+
+  for (const doc of docResult.selected) {
+    const nodeResult = await selectNodes(
+      question,
+      doc.document_id,
+      doc.filename,
+      getAdmin(),
+    );
+    llmCalls++;
+    reasoningParts.push(
+      `[Node Selection: ${doc.filename}] ${nodeResult.thinking}`,
+    );
+    allNodes.push(...nodeResult.nodes);
+  }
+
+  if (allNodes.length === 0) {
+    const fallback =
+      "Found relevant documents but couldn't identify specific sections to answer from.";
+    onChunk(fallback);
+    const result: RAGResult = Object.freeze({
+      answer: fallback,
+      sources: [],
+      reasoning: reasoningParts.join("\n\n"),
+      latency_ms: elapsed(start),
+      total_llm_calls: llmCalls,
+    });
+    await logQuery(question, result);
+    return result;
+  }
+
+  // -- Step 3: Streaming Answer Generation ----------------------------------
+  const answerResult = await streamAnswer(
+    question,
+    allNodes,
+    getAdmin(),
+    onChunk,
+  );
+  llmCalls++;
+  reasoningParts.push(
+    "[Answer Generation] Context assembled and answer streamed.",
+  );
+
+  const result: RAGResult = Object.freeze({
+    answer: answerResult.answer,
+    sources: answerResult.sources,
+    reasoning: reasoningParts.join("\n\n"),
+    latency_ms: elapsed(start),
+    total_llm_calls: llmCalls,
+  });
+
+  await logQuery(question, result);
   return result;
 }

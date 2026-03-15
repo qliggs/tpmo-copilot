@@ -3,7 +3,7 @@
 // query the projects table directly instead of the Obsidian vault.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { callClaude } from "@/lib/claude";
+import { callClaude, streamClaude } from "@/lib/claude";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,6 +111,64 @@ export async function queryPortfolio(
 
   const userMessage = `Question: ${question}\n\nPortfolio Data (${typedProjects.length} projects):\n${JSON.stringify(projectSummary, null, 2)}`;
   const answer = await callClaude(SYSTEM_PROMPT, userMessage, 4_096);
+
+  return Object.freeze({
+    answer,
+    projectCount: typedProjects.length,
+  });
+}
+
+/**
+ * Streaming variant of queryPortfolio for Mode B.
+ * Calls onChunk() for each text delta. Returns the final PortfolioResult
+ * once the stream completes.
+ */
+export async function streamPortfolioAnswer(
+  question: string,
+  supabase: SupabaseClient,
+  onChunk: (text: string) => void,
+): Promise<PortfolioResult> {
+  const { data: projects, error } = await supabase
+    .from("projects")
+    .select(
+      "name, team, priority, status, tshirt_size, resources_needed, quarter, theme, deliverable, start_date, end_date",
+    )
+    .order("name");
+
+  if (error) {
+    throw new Error(`Failed to fetch projects: ${error.message}`);
+  }
+
+  if (!projects || projects.length === 0) {
+    const fallback =
+      "No projects found in the portfolio database. Run a Notion sync first.";
+    onChunk(fallback);
+    return Object.freeze({ answer: fallback, projectCount: 0 });
+  }
+
+  const typedProjects = projects as readonly ProjectRow[];
+
+  const projectSummary = typedProjects.map((p) => ({
+    name: p.name,
+    team: p.team ?? "Unassigned",
+    priority: p.priority ?? "None",
+    status: p.status ?? "Unknown",
+    size: p.tshirt_size ?? "N/A",
+    resources: p.resources_needed ?? 0,
+    quarter: p.quarter ?? "N/A",
+    theme: p.theme ?? "N/A",
+    deliverable: p.deliverable ?? "N/A",
+    start_date: p.start_date ?? "TBD",
+    end_date: p.end_date ?? "TBD",
+  }));
+
+  const userMessage = `Question: ${question}\n\nPortfolio Data (${typedProjects.length} projects):\n${JSON.stringify(projectSummary, null, 2)}`;
+  const answer = await streamClaude(
+    SYSTEM_PROMPT,
+    userMessage,
+    onChunk,
+    4_096,
+  );
 
   return Object.freeze({
     answer,

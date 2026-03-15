@@ -1,12 +1,14 @@
-// POST /api/query
-// Accepts a user question, runs the 3-step RAG pipeline, returns a cited answer.
-// Rate-limited to 10 requests/minute per IP (in-memory, resets on restart).
+export const runtime = "edge";
+export const maxDuration = 300;
 
-import { NextRequest, NextResponse } from "next/server";
-import { runRAGQuery } from "@/lib/rag";
+// POST /api/query
+// Accepts a user question, runs the RAG pipeline, streams the answer via SSE.
+// Rate-limited to 10 requests/minute per IP (in-memory, resets on cold start).
+
+import { streamRAGQuery } from "@/lib/rag";
 
 // ---------------------------------------------------------------------------
-// Rate limiter (in-memory — upgrade to Redis/Upstash for production)
+// Rate limiter (in-memory — upgrade to Upstash for production)
 // ---------------------------------------------------------------------------
 
 const WINDOW_MS = 60_000;
@@ -37,61 +39,117 @@ function isRateLimited(ip: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function jsonResponse(body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function sseEvent(data: Record<string, unknown>): string {
+  return `data: ${JSON.stringify(data)}\n\n`;
+}
+
+// ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   // Rate limit by IP
-  const ip = request.headers.get("x-forwarded-for")
-    ?? request.headers.get("x-real-ip")
-    ?? "unknown";
+  const ip =
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
 
   if (isRateLimited(ip)) {
-    return NextResponse.json(
+    return jsonResponse(
       { error: "Rate limit exceeded. Max 10 requests per minute." },
-      { status: 429 },
+      429,
     );
   }
 
+  // Parse and validate body
+  let question: string;
+
   try {
-    // Parse and validate body
-    const body = await request.json().catch(() => null);
+    const body = await request.json();
 
     if (!body || typeof body !== "object") {
-      return NextResponse.json(
+      return jsonResponse(
         { error: "Request body must be a JSON object." },
-        { status: 400 },
+        400,
       );
     }
 
-    const { question } = body as { question: unknown };
+    const q = (body as Record<string, unknown>).question;
 
-    if (typeof question !== "string" || question.trim().length === 0) {
-      return NextResponse.json(
+    if (typeof q !== "string" || q.trim().length === 0) {
+      return jsonResponse(
         { error: "question must be a non-empty string." },
-        { status: 400 },
+        400,
       );
     }
 
-    if (question.length > 500) {
-      return NextResponse.json(
+    if (q.length > 500) {
+      return jsonResponse(
         { error: "question must be 500 characters or fewer." },
-        { status: 400 },
+        400,
       );
     }
 
-    // Run RAG pipeline
-    const result = await runRAGQuery(question.trim());
-
-    return NextResponse.json({
-      answer: result.answer,
-      sources: result.sources,
-      reasoning: result.reasoning,
-      latency_ms: result.latency_ms,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    console.error("[/api/query] Error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    question = q.trim();
+  } catch {
+    return jsonResponse({ error: "Invalid JSON body." }, 400);
   }
+
+  // Stream the response
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const result = await streamRAGQuery(question, (text) => {
+          controller.enqueue(
+            encoder.encode(sseEvent({ type: "chunk", text })),
+          );
+        });
+
+        controller.enqueue(
+          encoder.encode(
+            sseEvent({ type: "sources", sources: result.sources }),
+          ),
+        );
+
+        controller.enqueue(
+          encoder.encode(
+            sseEvent({
+              type: "done",
+              latencyMs: result.latency_ms,
+              reasoning: result.reasoning,
+            }),
+          ),
+        );
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Internal server error";
+        console.error("[/api/query] Streaming error:", err);
+        controller.enqueue(
+          encoder.encode(sseEvent({ type: "error", message })),
+        );
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }

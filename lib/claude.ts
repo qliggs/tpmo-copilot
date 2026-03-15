@@ -33,3 +33,41 @@ export async function callClaude(
 
   return textBlock.text;
 }
+
+/**
+ * Stream Claude and invoke onChunk for each text delta.
+ * Returns the fully assembled text once the stream completes.
+ * Edge-runtime compatible (uses standard async iteration over fetch-based stream).
+ */
+export async function streamClaude(
+  system: string,
+  userMessage: string,
+  onChunk: (text: string) => void,
+  maxTokens: number = 4_096,
+): Promise<string> {
+  const stream = await anthropic.messages.create({
+    model: RAG_MODEL,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: userMessage }],
+    stream: true,
+  });
+
+  let fullText = "";
+
+  for await (const event of stream) {
+    if (
+      event.type === "content_block_delta" &&
+      event.delta.type === "text_delta"
+    ) {
+      fullText += event.delta.text;
+      onChunk(event.delta.text);
+    }
+  }
+
+  if (fullText.length === 0) {
+    throw new Error("No text content in Claude stream");
+  }
+
+  return fullText;
+}

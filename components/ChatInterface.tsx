@@ -15,6 +15,42 @@ const EXAMPLE_QUESTIONS = [
 ] as const;
 
 // ---------------------------------------------------------------------------
+// SSE helpers
+// ---------------------------------------------------------------------------
+
+interface ChunkEvent {
+  readonly type: "chunk";
+  readonly text: string;
+}
+
+interface SourcesEvent {
+  readonly type: "sources";
+  readonly sources: readonly { filename: string; section_path: readonly string[] }[];
+}
+
+interface DoneEvent {
+  readonly type: "done";
+  readonly latencyMs: number;
+  readonly reasoning: string;
+}
+
+interface ErrorEvent {
+  readonly type: "error";
+  readonly message: string;
+}
+
+type SSEEvent = ChunkEvent | SourcesEvent | DoneEvent | ErrorEvent;
+
+function parseSSELine(line: string): SSEEvent | null {
+  if (!line.startsWith("data: ")) return null;
+  try {
+    return JSON.parse(line.slice(6)) as SSEEvent;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -22,12 +58,13 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<readonly Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new message
+  // Auto-scroll to bottom on new message or streaming update
   useEffect(() => {
     if (threadRef.current) {
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
@@ -56,6 +93,12 @@ export default function ChatInterface() {
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
 
+      const assistantId = `asst-${Date.now()}`;
+      let fullContent = "";
+      let sources: Message["sources"];
+      let reasoning: string | undefined;
+      let latencyMs: number | undefined;
+
       try {
         const res = await fetch("/api/query", {
           method: "POST",
@@ -63,33 +106,112 @@ export default function ChatInterface() {
           body: JSON.stringify({ question: trimmed }),
         });
 
-        const data = await res.json();
-
+        // Non-streaming error responses (rate limit, validation)
         if (!res.ok) {
-          throw new Error(data.error ?? `Request failed (${res.status})`);
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            (data as Record<string, string>).error ??
+              `Request failed (${res.status})`,
+          );
         }
 
-        const assistantMsg: Message = {
-          id: `asst-${Date.now()}`,
-          role: "assistant",
-          content: data.answer,
-          sources: data.sources,
-          reasoning: data.reasoning,
-          latency_ms: data.latency_ms,
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error("No response body");
+
+        // Add empty assistant message to fill progressively
+        setMessages((prev) => [
+          ...prev,
+          { id: assistantId, role: "assistant" as const, content: "" },
+        ]);
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let streamStarted = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Split on double-newline (SSE event boundary)
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() ?? "";
+
+          for (const part of parts) {
+            const event = parseSSELine(part.trim());
+            if (!event) continue;
+
+            switch (event.type) {
+              case "chunk": {
+                if (!streamStarted) {
+                  streamStarted = true;
+                  setIsStreaming(true);
+                }
+                fullContent += event.text;
+                const snapshot = fullContent;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId ? { ...m, content: snapshot } : m,
+                  ),
+                );
+                break;
+              }
+              case "sources":
+                sources = event.sources;
+                break;
+              case "done":
+                latencyMs = event.latencyMs;
+                reasoning = event.reasoning;
+                break;
+              case "error":
+                throw new Error(event.message);
+            }
+          }
+        }
+
+        // Final update with sources, reasoning, latency
+        const finalContent = fullContent;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  content: finalContent,
+                  sources,
+                  reasoning,
+                  latency_ms: latencyMs,
+                }
+              : m,
+          ),
+        );
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Something went wrong.";
+        const msg =
+          err instanceof Error ? err.message : "Something went wrong.";
         setError(msg);
 
-        const errorMsg: Message = {
-          id: `err-${Date.now()}`,
-          role: "assistant",
-          content: `Error: ${msg}`,
-        };
-        setMessages((prev) => [...prev, errorMsg]);
+        // Either update existing assistant bubble or add a new error bubble
+        setMessages((prev) => {
+          const hasAssistant = prev.some((m) => m.id === assistantId);
+          if (hasAssistant) {
+            return prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: fullContent || `Error: ${msg}` }
+                : m,
+            );
+          }
+          return [
+            ...prev,
+            {
+              id: assistantId,
+              role: "assistant" as const,
+              content: `Error: ${msg}`,
+            },
+          ];
+        });
       } finally {
         setIsLoading(false);
+        setIsStreaming(false);
         inputRef.current?.focus();
       }
     },
@@ -145,8 +267,8 @@ export default function ChatInterface() {
           messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
         )}
 
-        {/* Loading indicator */}
-        {isLoading && (
+        {/* Typing indicator — visible while Steps 1+2 run, before first chunk */}
+        {isLoading && !isStreaming && (
           <div className="flex justify-start">
             <div className="bg-gray-800 border border-gray-700/50 rounded-lg px-4 py-3">
               <div className="flex items-center gap-2">

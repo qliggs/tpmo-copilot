@@ -3,7 +3,7 @@
 // assembles context with source attribution, and calls Claude to answer.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { callClaude } from "@/lib/claude";
+import { callClaude, streamClaude } from "@/lib/claude";
 import type { SelectedNode } from "./node-selector";
 
 // ---------------------------------------------------------------------------
@@ -192,6 +192,43 @@ export async function generateAnswer(
   // Call Claude
   const userMessage = `Question: ${question}\n\nContext:\n${context}`;
   const answer = await callClaude(SYSTEM_PROMPT, userMessage, 4_096);
+
+  return Object.freeze({
+    answer,
+    sources: buildSources(selectedNodes),
+  });
+}
+
+/**
+ * Stage 3 (streaming): Stream an answer token-by-token.
+ * Calls onChunk() for each text delta. Returns the final AnswerResult
+ * with the fully assembled answer once the stream completes.
+ */
+export async function streamAnswer(
+  question: string,
+  selectedNodes: readonly SelectedNode[],
+  supabase: SupabaseClient,
+  onChunk: (text: string) => void,
+): Promise<AnswerResult> {
+  if (selectedNodes.length === 0) {
+    const fallback =
+      "I couldn't find any relevant document sections to answer this question.";
+    onChunk(fallback);
+    return Object.freeze({ answer: fallback, sources: [] });
+  }
+
+  const nodeTexts = await fetchNodeTexts(selectedNodes, supabase);
+  const context = assembleContext(selectedNodes, nodeTexts);
+
+  if (context.length === 0) {
+    const fallback =
+      "I found relevant documents but couldn't extract the section content.";
+    onChunk(fallback);
+    return Object.freeze({ answer: fallback, sources: [] });
+  }
+
+  const userMessage = `Question: ${question}\n\nContext:\n${context}`;
+  const answer = await streamClaude(SYSTEM_PROMPT, userMessage, onChunk, 4_096);
 
   return Object.freeze({
     answer,
