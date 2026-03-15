@@ -57,7 +57,7 @@ export default function Hero() {
             </svg>
           </Link>
           <a
-            href="#features"
+            href="#how-it-works"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-6 py-3 text-sm font-semibold text-gray-300 transition hover:border-gray-500 hover:text-white"
           >
             See How It Works
