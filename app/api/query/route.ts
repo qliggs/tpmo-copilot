@@ -105,13 +105,16 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "Invalid JSON body." }, 400);
   }
 
+  // Read optional session ID for conversation memory
+  const sessionId = request.headers.get("x-session-id") || undefined;
+
   // Stream the response
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const result = await streamRAGQuery(question, (text) => {
+        const result = await streamRAGQuery(question, sessionId, (text) => {
           controller.enqueue(
             encoder.encode(sseEvent({ type: "chunk", text })),
           );

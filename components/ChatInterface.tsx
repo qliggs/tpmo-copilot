@@ -64,6 +64,9 @@ export default function ChatInterface() {
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Session ID for conversation memory — resets on page refresh (intentional)
+  const sessionIdRef = useRef(crypto.randomUUID());
+
   // Auto-scroll to bottom on new message or streaming update
   useEffect(() => {
     if (threadRef.current) {
@@ -102,7 +105,10 @@ export default function ChatInterface() {
       try {
         const res = await fetch("/api/query", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-ID": sessionIdRef.current,
+          },
           body: JSON.stringify({ question: trimmed }),
         });
 

@@ -14,6 +14,11 @@ import {
   streamPortfolioAnswer,
   hasPortfolioData,
 } from "./portfolio-query";
+import {
+  getHistory,
+  formatHistoryForPrompt,
+  saveMessage,
+} from "@/lib/conversation";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,10 +78,25 @@ async function logQuery(
  *
  * Returns the answer, sources, reasoning trace, latency, and LLM call count.
  */
-export async function runRAGQuery(question: string): Promise<RAGResult> {
+export async function runRAGQuery(
+  question: string,
+  sessionId?: string,
+): Promise<RAGResult> {
   const start = performance.now();
   const reasoningParts: string[] = [];
   let llmCalls = 0;
+
+  // -- Conversation Memory ----------------------------------------------------
+  let enrichedQuestion = question;
+  if (sessionId) {
+    const history = await getHistory(sessionId);
+    if (history.length > 0) {
+      enrichedQuestion = formatHistoryForPrompt(history, question);
+      reasoningParts.push(
+        `[Memory] Loaded ${history.length} prior turns for context.`,
+      );
+    }
+  }
 
   // -- Mode Detection ---------------------------------------------------------
   const mode = detectQueryMode(question);
@@ -87,7 +107,7 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
     const hasData = await hasPortfolioData(getAdmin());
 
     if (hasData) {
-      const portfolioResult = await queryPortfolio(question, getAdmin());
+      const portfolioResult = await queryPortfolio(enrichedQuestion, getAdmin());
       llmCalls++;
       reasoningParts.push(
         `[Portfolio Query] Queried ${portfolioResult.projectCount} projects from the Book of Work.`,
@@ -102,6 +122,10 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
       });
 
       await logQuery(question, result);
+      if (sessionId) {
+        await saveMessage(sessionId, "user", question);
+        await saveMessage(sessionId, "assistant", result.answer);
+      }
       return result;
     }
 
@@ -114,7 +138,7 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
   // -- Mode A: Vault RAG (existing 3-step pipeline) ---------------------------
 
   // -- Step 1: Document Selection -------------------------------------------
-  const docResult = await selectDocuments(question, getAdmin());
+  const docResult = await selectDocuments(enrichedQuestion, getAdmin());
   llmCalls++;
   reasoningParts.push(`[Document Selection] ${docResult.thinking}`);
 
@@ -135,7 +159,7 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
 
   for (const doc of docResult.selected) {
     const nodeResult = await selectNodes(
-      question,
+      enrichedQuestion,
       doc.document_id,
       doc.filename,
       getAdmin(),
@@ -160,7 +184,7 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
   }
 
   // -- Step 3: Answer Generation --------------------------------------------
-  const answerResult = await generateAnswer(question, allNodes, getAdmin());
+  const answerResult = await generateAnswer(enrichedQuestion, allNodes, getAdmin());
   llmCalls++;
   reasoningParts.push("[Answer Generation] Context assembled and answer generated.");
 
@@ -172,8 +196,11 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
     total_llm_calls: llmCalls,
   });
 
-  // Log to Supabase (fire-and-forget, don't block response)
   await logQuery(question, result);
+  if (sessionId) {
+    await saveMessage(sessionId, "user", question);
+    await saveMessage(sessionId, "assistant", result.answer);
+  }
 
   return result;
 }
@@ -187,11 +214,24 @@ export async function runRAGQuery(question: string): Promise<RAGResult> {
  */
 export async function streamRAGQuery(
   question: string,
+  sessionId: string | undefined,
   onChunk: (text: string) => void,
 ): Promise<RAGResult> {
   const start = performance.now();
   const reasoningParts: string[] = [];
   let llmCalls = 0;
+
+  // -- Conversation Memory ----------------------------------------------------
+  let enrichedQuestion = question;
+  if (sessionId) {
+    const history = await getHistory(sessionId);
+    if (history.length > 0) {
+      enrichedQuestion = formatHistoryForPrompt(history, question);
+      reasoningParts.push(
+        `[Memory] Loaded ${history.length} prior turns for context.`,
+      );
+    }
+  }
 
   // -- Mode Detection ---------------------------------------------------------
   const mode = detectQueryMode(question);
@@ -203,7 +243,7 @@ export async function streamRAGQuery(
 
     if (hasData) {
       const portfolioResult = await streamPortfolioAnswer(
-        question,
+        enrichedQuestion,
         getAdmin(),
         onChunk,
       );
@@ -226,6 +266,10 @@ export async function streamRAGQuery(
       });
 
       await logQuery(question, result);
+      if (sessionId) {
+        await saveMessage(sessionId, "user", question);
+        await saveMessage(sessionId, "assistant", result.answer);
+      }
       return result;
     }
 
@@ -237,7 +281,7 @@ export async function streamRAGQuery(
   // -- Mode A: Vault RAG (Steps 1-2 blocking, Step 3 streaming) ---------------
 
   // -- Step 1: Document Selection -------------------------------------------
-  const docResult = await selectDocuments(question, getAdmin());
+  const docResult = await selectDocuments(enrichedQuestion, getAdmin());
   llmCalls++;
   reasoningParts.push(`[Document Selection] ${docResult.thinking}`);
 
@@ -260,7 +304,7 @@ export async function streamRAGQuery(
 
   for (const doc of docResult.selected) {
     const nodeResult = await selectNodes(
-      question,
+      enrichedQuestion,
       doc.document_id,
       doc.filename,
       getAdmin(),
@@ -289,7 +333,7 @@ export async function streamRAGQuery(
 
   // -- Step 3: Streaming Answer Generation ----------------------------------
   const answerResult = await streamAnswer(
-    question,
+    enrichedQuestion,
     allNodes,
     getAdmin(),
     onChunk,
@@ -308,5 +352,9 @@ export async function streamRAGQuery(
   });
 
   await logQuery(question, result);
+  if (sessionId) {
+    await saveMessage(sessionId, "user", question);
+    await saveMessage(sessionId, "assistant", result.answer);
+  }
   return result;
 }
