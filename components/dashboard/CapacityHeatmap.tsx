@@ -1,6 +1,7 @@
 // CapacityHeatmap — grid showing team utilization across months.
 // Server component. Rows = teams, Columns = months (next 6 months).
 
+import React from "react";
 import type { CapacityHeatmapCell } from "@/lib/engineer-stats";
 
 interface CapacityHeatmapProps {
@@ -72,9 +73,8 @@ export default function CapacityHeatmap({ cells }: CapacityHeatmapProps) {
 
         {/* Data rows */}
         {teams.map((team) => (
-          <>
+          <React.Fragment key={team}>
             <div
-              key={`label-${team}`}
               className="flex items-center text-xs text-text-primary"
             >
               {team}
@@ -96,7 +96,7 @@ export default function CapacityHeatmap({ cells }: CapacityHeatmapProps) {
                 </div>
               );
             })}
-          </>
+          </React.Fragment>
         ))}
       </div>
 
