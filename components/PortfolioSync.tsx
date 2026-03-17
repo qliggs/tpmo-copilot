@@ -63,10 +63,7 @@ export default function PortfolioSync() {
       const res = await fetch("/api/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: prompt("Enter sync secret:"),
-          triggered_by: "manual",
-        }),
+        body: JSON.stringify({ triggered_by: "manual" }),
       });
 
       const data: SyncResponse = await res.json();

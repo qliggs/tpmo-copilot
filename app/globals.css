@@ -156,3 +156,102 @@ html {
     @apply font-sans;
   }
 }
+
+/* Markdown prose styling for chat assistant messages */
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3,
+.prose-chat h4 {
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+.prose-chat h1 { font-size: 1.25rem; }
+.prose-chat h2 { font-size: 1.125rem; }
+.prose-chat h3 { font-size: 1rem; }
+.prose-chat h4 { font-size: 0.875rem; }
+.prose-chat h1:first-child,
+.prose-chat h2:first-child,
+.prose-chat h3:first-child {
+  margin-top: 0;
+}
+
+.prose-chat p {
+  margin-bottom: 0.75em;
+}
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-chat strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.prose-chat ul,
+.prose-chat ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+.prose-chat ul { list-style-type: disc; }
+.prose-chat ol { list-style-type: decimal; }
+.prose-chat li { margin-bottom: 0.25em; }
+
+.prose-chat code {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  background: var(--color-bg-elevated);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+}
+
+.prose-chat pre {
+  font-family: var(--font-mono);
+  background: var(--color-bg-elevated);
+  border-radius: 6px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  margin-bottom: 0.75em;
+}
+.prose-chat pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.8em;
+}
+
+.prose-chat table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75em;
+  font-size: 0.85em;
+}
+.prose-chat thead th {
+  text-align: left;
+  padding: 0.5em 0.75em;
+  border-bottom: 2px solid var(--color-neon-magenta);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+.prose-chat tbody td {
+  padding: 0.4em 0.75em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.prose-chat blockquote {
+  border-left: 3px solid var(--color-neon-magenta);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 0.75em;
+  color: var(--color-text-muted);
+}
+
+.prose-chat a {
+  color: var(--color-neon-magenta);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-chat a:hover {
+  color: var(--color-text-primary);
+}

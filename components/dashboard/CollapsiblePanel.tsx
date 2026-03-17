@@ -5,12 +5,14 @@ import { ChevronDown } from "lucide-react";
 
 interface CollapsiblePanelProps {
   readonly title: string;
+  readonly summary?: string;
   readonly defaultOpen?: boolean;
   readonly children: React.ReactNode;
 }
 
 export default function CollapsiblePanel({
   title,
+  summary,
   defaultOpen = true,
   children,
 }: CollapsiblePanelProps) {
@@ -22,9 +24,16 @@ export default function CollapsiblePanel({
         onClick={() => setIsOpen((prev) => !prev)}
         className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
-        <h3 className="font-display text-lg font-semibold text-text-primary">
-          {title}
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-lg font-semibold text-text-primary">
+            {title}
+          </h3>
+          {!isOpen && summary && (
+            <span className="text-xs font-mono text-text-muted">
+              {summary}
+            </span>
+          )}
+        </div>
         <ChevronDown
           className={`h-5 w-5 text-text-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
         />

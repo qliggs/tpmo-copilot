@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import MessageBubble, { type Message } from "./MessageBubble";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -238,11 +239,11 @@ export default function ChatInterface() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col flex-1 bg-bg-surface">
+    <div className="flex flex-col flex-1 bg-bg-surface relative">
       {/* Message thread */}
       <div
         ref={threadRef}
-        className="flex-1 overflow-y-auto px-6 py-6 space-y-4"
+        className="flex-1 overflow-y-auto px-6 py-6 pb-40 space-y-4"
       >
         {isEmpty ? (
           <EmptyState onExampleClick={handleExampleClick} />
@@ -260,15 +261,20 @@ export default function ChatInterface() {
                   <span className="w-1.5 h-1.5 bg-neon-magenta rounded-full animate-bounce [animation-delay:150ms]" />
                   <span className="w-1.5 h-1.5 bg-neon-magenta rounded-full animate-bounce [animation-delay:300ms]" />
                 </div>
-                <span className="text-xs text-text-muted">Searching documents...</span>
+                <TextShimmer
+                  className="font-mono text-sm [--base-color:var(--color-text-muted)] [--base-gradient-color:var(--color-neon-magenta)]"
+                  duration={1.5}
+                >
+                  Searching documents...
+                </TextShimmer>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Input area */}
-      <div className="shrink-0 border-t border-white/[0.07] px-6 py-4">
+      {/* Input area — sticky at bottom */}
+      <div className="sticky bottom-0 z-20 border-t border-white/[0.07] bg-bg-surface px-6 py-4">
         {error && !isLoading && (
           <p className="text-xs text-red-400 mb-2">{error}</p>
         )}
@@ -281,7 +287,7 @@ export default function ChatInterface() {
             placeholder="Ask a question..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-lg bg-bg-elevated border border-white/[0.07] px-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-neon-magenta/40 focus:ring-1 focus:ring-neon-magenta/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none rounded-lg bg-bg-elevated border border-white/[0.07] px-4 py-2.5 text-sm font-sans text-text-primary placeholder-text-muted focus:outline-none focus:border-neon-magenta/40 focus:ring-1 focus:ring-neon-magenta/20 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             onClick={() => submitQuestion(inputValue)}
@@ -316,7 +322,7 @@ function EmptyState({
       <h2 className="text-sm font-medium font-display text-text-primary mb-1">
         Ask your knowledge vault
       </h2>
-      <p className="text-xs text-text-muted mb-6 max-w-sm">
+      <p className="text-xs text-text-muted font-sans mb-6 max-w-sm">
         Your documents have been indexed into navigable trees.
         Ask a question and the system will reason through the structure to find answers.
       </p>
@@ -325,7 +331,7 @@ function EmptyState({
           <button
             key={q}
             onClick={() => onExampleClick(q)}
-            className="text-left text-xs text-text-muted hover:text-text-primary bg-bg-elevated/50 hover:bg-bg-elevated border border-white/[0.07] hover:border-white/[0.12] rounded-lg px-4 py-2.5 transition-colors cursor-pointer"
+            className="text-left text-xs font-sans text-text-muted hover:text-text-primary bg-bg-elevated/50 hover:bg-bg-elevated border border-white/[0.07] hover:border-white/[0.12] rounded-lg px-4 py-2.5 transition-colors cursor-pointer"
           >
             {q}
           </button>

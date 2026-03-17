@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import SourceCitation from "./SourceCitation";
 
 // ---------------------------------------------------------------------------
@@ -43,9 +45,17 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         }`}
       >
         {/* Message content */}
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">
-          {message.content}
-        </div>
+        {isUser ? (
+          <div className="text-sm font-sans leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </div>
+        ) : (
+          <div className="prose-chat text-sm font-sans leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
 
         {/* Sources */}
         {!isUser && message.sources && message.sources.length > 0 && (

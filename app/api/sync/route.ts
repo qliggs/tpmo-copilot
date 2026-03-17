@@ -1,42 +1,35 @@
 // POST /api/sync
 // Triggers a Notion -> Supabase sync of both the Book of Work and Engineers databases.
-// Protected by INGEST_SECRET (same auth pattern as /api/ingest).
+// Auth priority:
+//   1. Valid NextAuth session -> allow (admin UI)
+//   2. Authorization header matching INGEST_SECRET -> allow (external callers)
+//   3. Otherwise -> 401
 // Called manually from the admin UI or nightly via Vercel cron.
 
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { syncNotionToSupabase, syncEngineersFromNotion } from "@/lib/notion-sync";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json().catch(() => null);
+    // Auth check: session first, then Authorization header
+    const session = await auth();
+    const authHeader = request.headers.get("authorization");
+    const ingestSecret = process.env.INGEST_SECRET ?? "";
 
-    if (!body || typeof body !== "object") {
+    const hasSession = !!session?.user;
+    const hasValidHeader =
+      ingestSecret && authHeader === `Bearer ${ingestSecret}`;
+
+    if (!hasSession && !hasValidHeader) {
       return NextResponse.json(
-        { error: "Request body must be a JSON object." },
-        { status: 400 },
-      );
-    }
-
-    const { secret, triggered_by } = body as {
-      secret: unknown;
-      triggered_by?: unknown;
-    };
-
-    const expectedSecret = process.env.INGEST_SECRET ?? "";
-
-    if (!expectedSecret) {
-      return NextResponse.json(
-        { error: "INGEST_SECRET is not configured on the server." },
-        { status: 500 },
-      );
-    }
-
-    if (typeof secret !== "string" || secret !== expectedSecret) {
-      return NextResponse.json(
-        { error: "Unauthorized. Invalid secret." },
+        { error: "Unauthorized." },
         { status: 401 },
       );
     }
+
+    const body = await request.json().catch(() => ({}));
+    const { triggered_by } = body as { triggered_by?: unknown };
 
     const trigger = triggered_by === "cron" ? "cron" as const : "manual" as const;
     const [projectResult, engineerResult] = await Promise.all([

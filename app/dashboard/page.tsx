@@ -75,6 +75,18 @@ export default async function DashboardPage() {
   const heatmapCells = computeCapacityHeatmap(engineers, projects);
   const engineerRisks = computeEngineerRisks(allocations, teamCapacities);
 
+  // Collapsed summaries
+  const highestLoadTeam = [...teamLoad].sort((a, b) => b.count - a.count)[0];
+  const teamLoadSummary = `${teamLoad.length} teams` +
+    (highestLoadTeam ? ` · ${highestLoadTeam.team} at highest load` : "");
+
+  const uniqueTeams = new Set(allocations.map((a) => a.team));
+  const engineersSummary = `${allocations.length} engineers · ${uniqueTeams.size} teams`;
+
+  const criticalCount = projects.filter((p) => p.priority === "P0").length;
+  const projectTableSummary = `${projects.length} projects` +
+    (criticalCount > 0 ? ` · ${criticalCount} critical` : "");
+
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <AppNav />
@@ -96,38 +108,40 @@ export default async function DashboardPage() {
             <StatCard label="Teams" value={stats.teamCount} />
           </div>
 
-          {/* Gantt chart */}
-          <CollapsiblePanel title="Timeline">
+          {/* Gantt chart — defaultOpen */}
+          <CollapsiblePanel title="Timeline" defaultOpen>
             <GanttChartClient projects={projects} />
           </CollapsiblePanel>
 
-          {/* Capacity Heatmap + Status Breakdown */}
+          {/* Capacity Heatmap + Status Breakdown — defaultOpen */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <CollapsiblePanel title="Capacity Heatmap">
+            <CollapsiblePanel title="Capacity Heatmap" defaultOpen>
               <CapacityHeatmap cells={heatmapCells} />
             </CollapsiblePanel>
-            <CollapsiblePanel title="Status Breakdown">
+            <CollapsiblePanel title="Status Breakdown" defaultOpen>
               <StatusPanel statusBreakdown={statusBreakdown} />
             </CollapsiblePanel>
           </div>
 
-          {/* Team Load */}
-          <CollapsiblePanel title="Team Load">
-            <TeamLoadPanel teamLoad={teamLoad} />
-          </CollapsiblePanel>
-
-          {/* Engineers */}
-          <CollapsiblePanel title="Engineers">
-            <EngineersPanel allocations={allocations} />
-          </CollapsiblePanel>
-
-          {/* Risk Signals */}
-          <CollapsiblePanel title={`Risk Signals (${riskSignals.length + engineerRisks.length})`}>
+          {/* Risk Signals — defaultOpen */}
+          <CollapsiblePanel title={`Risk Signals (${riskSignals.length + engineerRisks.length})`} defaultOpen>
             <RiskPanel riskSignals={riskSignals} engineerRisks={engineerRisks} />
           </CollapsiblePanel>
 
-          {/* Project table */}
-          <ProjectTable projects={projects} />
+          {/* Team Load — collapsed by default */}
+          <CollapsiblePanel title="Team Load" defaultOpen={false} summary={teamLoadSummary}>
+            <TeamLoadPanel teamLoad={teamLoad} />
+          </CollapsiblePanel>
+
+          {/* Engineers — collapsed by default */}
+          <CollapsiblePanel title="Engineers" defaultOpen={false} summary={engineersSummary}>
+            <EngineersPanel allocations={allocations} />
+          </CollapsiblePanel>
+
+          {/* Project table — collapsed by default */}
+          <CollapsiblePanel title="Project Table" defaultOpen={false} summary={projectTableSummary}>
+            <ProjectTable projects={projects} />
+          </CollapsiblePanel>
         </div>
       </main>
     </div>
