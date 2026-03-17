@@ -14,14 +14,20 @@ interface SyncStatus {
   readonly unchanged: number;
 }
 
+interface SyncResultBucket {
+  readonly added?: number;
+  readonly updated?: number;
+  readonly unchanged?: number;
+  readonly total?: number;
+  readonly errors?: readonly string[];
+  readonly error?: string;
+}
+
 interface SyncResponse {
   readonly success: boolean;
-  readonly added: number;
-  readonly updated: number;
-  readonly unchanged: number;
-  readonly total: number;
-  readonly errors: readonly string[];
-  readonly error?: string;
+  readonly projects: SyncResultBucket | null;
+  readonly engineers: SyncResultBucket | null;
+  readonly message: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,10 +72,20 @@ export default function PortfolioSync() {
         body: JSON.stringify({ triggered_by: "manual" }),
       });
 
-      const data: SyncResponse = await res.json();
+      let data: SyncResponse;
+      try {
+        data = await res.json();
+      } catch {
+        setError(`Sync returned non-JSON response (${res.status})`);
+        return;
+      }
 
-      if (!res.ok) {
-        setError(data.error ?? `Sync failed (${res.status})`);
+      if (!res.ok || !data.success) {
+        setError(data.message ?? `Sync failed (${res.status})`);
+        // Still show partial results if available
+        if (data.projects || data.engineers) {
+          setLastResult(data);
+        }
       } else {
         setLastResult(data);
         fetchStatus();
@@ -123,16 +139,33 @@ export default function PortfolioSync() {
 
         {/* Result */}
         {lastResult && (
-          <div className="mt-4 rounded border border-emerald-800/50 bg-emerald-900/20 p-4 font-mono text-sm text-emerald-300">
-            <p>Sync complete: {lastResult.total} records processed</p>
-            <p className="mt-1 text-text-muted">
-              +{lastResult.added} added / ~{lastResult.updated} updated /{" "}
-              {lastResult.unchanged} unchanged
+          <div className={`mt-4 rounded border p-4 font-mono text-sm ${
+            lastResult.success
+              ? "border-emerald-800/50 bg-emerald-900/20 text-emerald-300"
+              : "border-amber-800/50 bg-amber-900/20 text-amber-300"
+          }`}>
+            <p>
+              {lastResult.success ? "Sync complete" : "Partial sync"}
+              {": "}
+              {[
+                lastResult.projects && !lastResult.projects.error
+                  ? `${lastResult.projects.total ?? 0} projects`
+                  : null,
+                lastResult.engineers && !lastResult.engineers.error
+                  ? `${lastResult.engineers.total ?? 0} engineers`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" \u00B7 ") || "no data"}
             </p>
-            {lastResult.errors.length > 0 && (
-              <p className="mt-2 text-amber-400">
-                {lastResult.errors.length} error(s):{" "}
-                {lastResult.errors.join("; ")}
+            {lastResult.projects?.error && (
+              <p className="mt-1 text-amber-400">
+                Project sync error: {lastResult.projects.error}
+              </p>
+            )}
+            {lastResult.engineers?.error && (
+              <p className="mt-1 text-amber-400">
+                Engineer sync error: {lastResult.engineers.error}
               </p>
             )}
           </div>
