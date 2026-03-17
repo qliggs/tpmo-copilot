@@ -8,9 +8,9 @@ import { StickyScroll } from "@/components/ui/sticky-scroll-reveal";
 
 const BOX_FILL = "rgba(255,255,255,0.06)";
 const BOX_STROKE = "rgba(255,255,255,0.12)";
-const LABEL_COLOR = "rgba(226,232,240,0.9)";
-const DIM_COLOR = "rgba(148,163,184,0.7)";
-const ACCENT_LINE = "rgba(226,232,240,0.4)";
+const LABEL_COLOR = "#F2F2F4";
+const DIM_COLOR = "#7A7A85";
+const ACCENT_LINE = "rgba(232, 65, 122, 0.4)";
 
 // ---------------------------------------------------------------------------
 // Diagram 1 — The Query Pipeline
@@ -18,7 +18,7 @@ const ACCENT_LINE = "rgba(226,232,240,0.4)";
 
 function QueryPipelineDiagram() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
       <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
         {/* User Question */}
         <rect x="70" y="4" width="140" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
@@ -69,7 +69,7 @@ function QueryPipelineDiagram() {
 
 function IngestionDiagram() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
       <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
         {/* Obsidian files */}
         <rect x="60" y="6" width="160" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
@@ -115,7 +115,7 @@ function IngestionDiagram() {
 
 function DualSourceDiagram() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
       <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
         {/* User Question */}
         <rect x="70" y="4" width="140" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
@@ -174,7 +174,7 @@ function InferenceTableDiagram() {
   ];
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-graphite-900 p-3 rounded-md">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
       <svg viewBox="0 0 280 200" className="w-full h-full" fill="none">
         {/* Header row */}
         <rect x="4" y="10" width="272" height="22" rx="3" fill="rgba(255,255,255,0.04)" />
@@ -257,13 +257,13 @@ export default function HowItWorks() {
     <section id="how-it-works" className="px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-12">
-          <p className="font-mono text-sm tracking-widest text-arctic-muted uppercase">
+          <p className="font-mono text-sm tracking-widest text-text-muted uppercase">
             How It Works
           </p>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Under the hood
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-arctic-muted">
+          <p className="mx-auto mt-4 max-w-2xl text-text-muted">
             Four architectural decisions that make TPMO Copilot fast, cheap,
             and accurate.
           </p>
@@ -274,7 +274,7 @@ export default function HowItWorks() {
           {SECTION_LABELS.map((label) => (
             <span
               key={label}
-              className="rounded-full border border-white/[0.07] px-3 py-1 font-mono text-[10px] text-arctic-dim"
+              className="rounded-full border border-white/[0.07] px-3 py-1 font-mono text-[10px] text-text-muted"
             >
               {label}
             </span>

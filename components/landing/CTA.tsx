@@ -3,18 +3,18 @@ import Link from "next/link";
 export default function CTA() {
   return (
     <section className="px-6 py-20 sm:py-28">
-      <div className="mx-auto max-w-3xl rounded-2xl border border-white/[0.07] bg-gradient-to-b from-graphite-800/50 to-graphite-900/50 px-8 py-16 text-center sm:px-16">
-        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-white/[0.07] bg-gradient-to-b from-bg-surface/50 to-bg-primary/50 px-8 py-16 text-center sm:px-16">
+        <h2 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
           Stop searching. Start asking.
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-arctic-muted">
+        <p className="mx-auto mt-4 max-w-xl text-text-muted">
           Connect your knowledge sources and let TPMO Copilot surface the
           insights that keep your programs on track.
         </p>
         <div className="mt-8">
           <Link
             href="/chat"
-            className="inline-flex items-center gap-2 rounded-lg bg-arctic px-8 py-3.5 text-sm font-semibold text-graphite-950 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arctic-muted"
+            className="inline-flex items-center gap-2 rounded-lg bg-neon-magenta px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-neon-magenta/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-magenta"
           >
             Launch Copilot
             <svg
@@ -32,7 +32,7 @@ export default function CTA() {
             </svg>
           </Link>
         </div>
-        <p className="mt-4 font-mono text-xs text-arctic-dim">
+        <p className="mt-4 font-mono text-xs text-text-muted">
           No signup required. Bring your own API keys.
         </p>
       </div>

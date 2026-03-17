@@ -265,3 +265,186 @@ export async function syncNotionToSupabase(
 
   return Object.freeze({ added, updated, unchanged, total: pages.length, errors });
 }
+
+// ---------------------------------------------------------------------------
+// Engineer property extractors
+// ---------------------------------------------------------------------------
+
+function extractCheckbox(prop: unknown): boolean {
+  const p = prop as { type?: string; checkbox?: boolean };
+  if (p?.type === "checkbox") {
+    return p.checkbox ?? false;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Engineer types
+// ---------------------------------------------------------------------------
+
+interface EngineerRecord {
+  readonly notion_id: string;
+  readonly name: string;
+  readonly team: string | null;
+  readonly capacity: number;
+  readonly active: boolean;
+  readonly notes: string | null;
+  readonly raw_notion_properties: Record<string, unknown>;
+  readonly last_synced_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Map Notion page to engineer record
+// ---------------------------------------------------------------------------
+
+function mapPageToEngineer(page: NotionPage): EngineerRecord {
+  const props = page.properties;
+  return {
+    notion_id: page.id,
+    name: extractTitle(props["Name"]),
+    team: extractSelect(props["Team"]),
+    capacity: extractNumber(props["Capacity"]) ?? 1.0,
+    active: extractCheckbox(props["Active"]),
+    notes: extractRichText(props["Notes"]),
+    raw_notion_properties: props as unknown as Record<string, unknown>,
+    last_synced_at: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Engineer diff logic
+// ---------------------------------------------------------------------------
+
+function hasEngineerChanged(
+  incoming: EngineerRecord,
+  existing: Record<string, unknown>,
+): boolean {
+  const fields: (keyof EngineerRecord)[] = ["name", "team", "capacity", "active", "notes"];
+  for (const field of fields) {
+    if ((incoming[field] ?? null) !== (existing[field] ?? null)) return true;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Engineer Sync
+// ---------------------------------------------------------------------------
+
+/**
+ * Sync all pages from the Notion Engineers database to Supabase.
+ * Returns counts of added, updated, unchanged records plus any errors.
+ */
+export async function syncEngineersFromNotion(
+  triggeredBy: "manual" | "cron" = "manual",
+): Promise<SyncResult> {
+  const notionApiKey = process.env.NOTION_API_KEY;
+  const databaseId = process.env.NOTION_ENGINEERS_DATABASE_ID;
+
+  if (!notionApiKey || !databaseId) {
+    return Object.freeze({
+      added: 0,
+      updated: 0,
+      unchanged: 0,
+      total: 0,
+      errors: ["NOTION_ENGINEERS_DATABASE_ID not configured"],
+    });
+  }
+
+  const notion = new Client({ auth: notionApiKey });
+  const supabase = getSupabaseAdmin();
+  const errors: string[] = [];
+
+  // Fetch all pages from Notion with pagination
+  const pages: NotionPage[] = [];
+  let cursor: string | null = null;
+  let hasMore = true;
+
+  while (hasMore) {
+    const queryParams: { database_id: string; page_size: number; start_cursor?: string } = {
+      database_id: databaseId,
+      page_size: 100,
+    };
+    if (cursor) {
+      queryParams.start_cursor = cursor;
+    }
+
+    const response = await notion.databases.query(queryParams);
+
+    for (const page of response.results) {
+      if ("properties" in page) {
+        pages.push(page as NotionPage);
+      }
+    }
+
+    cursor = response.next_cursor;
+    hasMore = response.has_more;
+  }
+
+  // Fetch existing engineers from Supabase
+  const { data: existingRows, error: fetchError } = await supabase
+    .from("engineers")
+    .select("*");
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch existing engineers: ${fetchError.message}`);
+  }
+
+  const existingMap = new Map<string, Record<string, unknown>>();
+  for (const row of existingRows ?? []) {
+    existingMap.set(row.notion_id as string, row);
+  }
+
+  // Diff and upsert
+  let added = 0;
+  let updated = 0;
+  let unchanged = 0;
+
+  for (const page of pages) {
+    const engineer = mapPageToEngineer(page);
+    const existing = existingMap.get(engineer.notion_id);
+
+    try {
+      if (!existing) {
+        // New record — insert
+        const { error } = await supabase.from("engineers").insert({
+          ...engineer,
+          updated_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+        added++;
+      } else if (hasEngineerChanged(engineer, existing)) {
+        // Changed record — update
+        const { error } = await supabase
+          .from("engineers")
+          .update({
+            ...engineer,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("notion_id", engineer.notion_id);
+        if (error) throw error;
+        updated++;
+      } else {
+        unchanged++;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`[${engineer.name}] ${msg}`);
+    }
+  }
+
+  // Write sync log
+  const { error: logError } = await supabase.from("sync_log").insert({
+    records_added: added,
+    records_updated: updated,
+    records_unchanged: unchanged,
+    records_total: pages.length,
+    triggered_by: triggeredBy,
+    error: errors.length > 0 ? errors.join("; ") : null,
+  });
+
+  if (logError) {
+    console.warn(`[notion-sync] Failed to write engineer sync_log: ${logError.message}`);
+  }
+
+  return Object.freeze({ added, updated, unchanged, total: pages.length, errors });
+}

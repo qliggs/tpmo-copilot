@@ -42,7 +42,7 @@ function LoginForm() {
       <div>
         <label
           htmlFor="username"
-          className="block text-xs font-medium text-arctic-muted mb-1.5"
+          className="block text-xs font-medium text-text-muted mb-1.5"
         >
           Username
         </label>
@@ -53,7 +53,7 @@ function LoginForm() {
           onChange={(e) => setUsername(e.target.value)}
           required
           autoFocus
-          className="w-full px-3 py-2.5 bg-graphite-900 border border-white/[0.07] rounded-lg text-sm text-slate-100 font-mono placeholder-arctic-dim focus:outline-none focus:border-arctic-muted/40 focus:ring-1 focus:ring-arctic-muted/20 transition-colors"
+          className="w-full px-3 py-2.5 bg-bg-surface border border-white/[0.07] rounded-lg text-sm text-text-primary font-mono placeholder-text-muted focus:outline-none focus:border-neon-magenta/40 focus:ring-1 focus:ring-neon-magenta/20 transition-colors"
           placeholder="Enter username"
         />
       </div>
@@ -61,7 +61,7 @@ function LoginForm() {
       <div>
         <label
           htmlFor="password"
-          className="block text-xs font-medium text-arctic-muted mb-1.5"
+          className="block text-xs font-medium text-text-muted mb-1.5"
         >
           Password
         </label>
@@ -71,7 +71,7 @@ function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full px-3 py-2.5 bg-graphite-900 border border-white/[0.07] rounded-lg text-sm text-slate-100 font-mono placeholder-arctic-dim focus:outline-none focus:border-arctic-muted/40 focus:ring-1 focus:ring-arctic-muted/20 transition-colors"
+          className="w-full px-3 py-2.5 bg-bg-surface border border-white/[0.07] rounded-lg text-sm text-text-primary font-mono placeholder-text-muted focus:outline-none focus:border-neon-magenta/40 focus:ring-1 focus:ring-neon-magenta/20 transition-colors"
           placeholder="Enter password"
         />
       </div>
@@ -81,7 +81,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2.5 bg-arctic hover:bg-white text-graphite-950 disabled:bg-graphite-800 disabled:text-arctic-dim disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors cursor-pointer"
+        className="w-full py-2.5 bg-neon-magenta hover:bg-white text-white hover:text-bg-primary disabled:bg-bg-elevated disabled:text-text-muted disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors cursor-pointer"
       >
         {loading ? "Signing in..." : "Sign in"}
       </button>
@@ -95,18 +95,18 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-graphite-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-bg-primary px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-arctic text-xs font-bold text-graphite-950">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neon-magenta text-xs font-bold text-white">
               TC
             </div>
           </div>
-          <h1 className="text-xl font-semibold text-slate-100 tracking-tight font-mono">
+          <h1 className="text-xl font-semibold text-text-primary tracking-tight font-display">
             TPMO Copilot
           </h1>
-          <p className="text-xs text-arctic-dim mt-1">Sign in to continue</p>
+          <p className="text-xs text-text-muted mt-1">Sign in to continue</p>
         </div>
 
         <Suspense>

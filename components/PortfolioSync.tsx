@@ -86,20 +86,20 @@ export default function PortfolioSync() {
 
   return (
     <section className="mx-auto max-w-2xl px-6 py-12">
-      <h2 className="mb-6 font-mono text-lg font-semibold text-zinc-100">
+      <h2 className="mb-6 font-mono text-lg font-semibold font-display text-text-primary">
         Portfolio Sync
       </h2>
 
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+      <div className="rounded-lg border border-white/[0.07] bg-bg-surface/60 p-6">
         {/* Status */}
-        <div className="mb-6 space-y-2 font-mono text-sm text-zinc-400">
+        <div className="mb-6 space-y-2 font-mono text-sm text-text-muted">
           {loading ? (
             <p>Loading sync status...</p>
           ) : status ? (
             <>
               <p>
                 Last synced:{" "}
-                <span className="text-zinc-200">
+                <span className="text-text-primary">
                   {status.lastSynced
                     ? new Date(status.lastSynced).toLocaleString()
                     : "Never"}
@@ -107,7 +107,7 @@ export default function PortfolioSync() {
               </p>
               <p>
                 Projects in database:{" "}
-                <span className="text-zinc-200">{status.totalRecords}</span>
+                <span className="text-text-primary">{status.totalRecords}</span>
               </p>
             </>
           ) : (
@@ -119,7 +119,7 @@ export default function PortfolioSync() {
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="rounded bg-zinc-100 px-4 py-2 font-mono text-sm font-medium text-zinc-900 transition hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded bg-neon-magenta px-4 py-2 font-mono text-sm font-medium text-white transition hover:bg-neon-magenta/80 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {syncing ? "Syncing..." : "Sync from Notion Now"}
         </button>
@@ -128,7 +128,7 @@ export default function PortfolioSync() {
         {lastResult && (
           <div className="mt-4 rounded border border-emerald-800/50 bg-emerald-900/20 p-4 font-mono text-sm text-emerald-300">
             <p>Sync complete: {lastResult.total} records processed</p>
-            <p className="mt-1 text-zinc-400">
+            <p className="mt-1 text-text-muted">
               +{lastResult.added} added / ~{lastResult.updated} updated /{" "}
               {lastResult.unchanged} unchanged
             </p>

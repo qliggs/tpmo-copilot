@@ -16,7 +16,7 @@ export default function SourceCitation({ sources }: SourceCitationProps) {
 
   return (
     <div className="mt-3 space-y-1">
-      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">
+      <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest">
         Sources
       </p>
       {sources.map((source, i) => {
@@ -24,7 +24,7 @@ export default function SourceCitation({ sources }: SourceCitationProps) {
         return (
           <div
             key={`${source.filename}-${i}`}
-            className="flex items-start gap-1.5 text-xs text-gray-400"
+            className="flex items-start gap-1.5 text-xs text-text-muted"
           >
             <span className="shrink-0">&#128196;</span>
             <span className="font-mono leading-relaxed">{path}</span>

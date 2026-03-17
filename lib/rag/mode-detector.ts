@@ -2,15 +2,32 @@
 // Determines whether a query should use:
 //   Mode A: Obsidian vault RAG (existing 3-step pipeline)
 //   Mode B: Portfolio query (structured project data from Notion)
+//   Mode C: Capacity query (engineer allocation and team workload)
 //
-// Returns "portfolio" as a HINT only — the orchestrator must verify
-// that matching projects exist before committing to Mode B.
+// Returns the mode as a HINT only — the orchestrator must verify
+// that matching data exists before committing to the mode.
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type QueryMode = "vault" | "portfolio";
+export type QueryMode = "vault" | "portfolio" | "capacity";
+
+// ---------------------------------------------------------------------------
+// Constants — capacity patterns (checked first, before portfolio)
+// ---------------------------------------------------------------------------
+
+/** High-confidence: engineer/team capacity and allocation questions. */
+const CAPACITY_PATTERNS: readonly RegExp[] = [
+  /\b(who|which\s+engineers?)\s+(is|are)\s+(over-?allocated|under-?allocated|free|available)\b/i,
+  /\b(engineer|team)\s+(allocation|utilization|workload|capacity)\b/i,
+  /\bengineers?\s+(in|on|for|across)\b/i,
+  /\bFTE\s+(available|allocated|remaining)\b/i,
+  /\b(team|engineer)\s+load\b/i,
+  /\bover-?allocat/i,
+  /\bunder-?allocat/i,
+  /\bwho\s+is\s+working\s+on\b/i,
+];
 
 // ---------------------------------------------------------------------------
 // Constants — strong-signal patterns that suggest portfolio mode
@@ -45,13 +62,21 @@ const PORTFOLIO_SUBJECT_PATTERNS: readonly RegExp[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * Classify a user query as vault (Mode A) or portfolio (Mode B).
+ * Classify a user query as vault (Mode A), portfolio (Mode B), or capacity (Mode C).
  * Uses keyword pattern matching — no LLM call needed.
  *
- * IMPORTANT: "portfolio" is a hint. The orchestrator verifies against
- * Supabase and falls back to vault if no matching projects are found.
+ * IMPORTANT: the mode is a hint. The orchestrator verifies against
+ * Supabase and falls back if no matching data is found.
  */
 export function detectQueryMode(question: string): QueryMode {
+  // Check capacity patterns first (most specific)
+  for (const pattern of CAPACITY_PATTERNS) {
+    if (pattern.test(question)) {
+      return "capacity";
+    }
+  }
+
+  // Then portfolio patterns
   for (const pattern of STRONG_PORTFOLIO_PATTERNS) {
     if (pattern.test(question)) {
       return "portfolio";

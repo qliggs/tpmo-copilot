@@ -238,7 +238,7 @@ export default function ChatInterface() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col flex-1 bg-gray-900">
+    <div className="flex flex-col flex-1 bg-bg-surface">
       {/* Message thread */}
       <div
         ref={threadRef}
@@ -253,14 +253,14 @@ export default function ChatInterface() {
         {/* Typing indicator — visible while Steps 1+2 run, before first chunk */}
         {isLoading && !isStreaming && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 border border-gray-700/50 rounded-lg px-4 py-3">
+            <div className="bg-bg-elevated border border-white/[0.07] rounded-lg px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-arctic rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 bg-arctic rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 bg-arctic rounded-full animate-bounce [animation-delay:300ms]" />
+                  <span className="w-1.5 h-1.5 bg-neon-magenta rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 bg-neon-magenta rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 bg-neon-magenta rounded-full animate-bounce [animation-delay:300ms]" />
                 </div>
-                <span className="text-xs text-gray-500">Searching documents...</span>
+                <span className="text-xs text-text-muted">Searching documents...</span>
               </div>
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function ChatInterface() {
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 border-t border-gray-800 px-6 py-4">
+      <div className="shrink-0 border-t border-white/[0.07] px-6 py-4">
         {error && !isLoading && (
           <p className="text-xs text-red-400 mb-2">{error}</p>
         )}
@@ -281,17 +281,17 @@ export default function ChatInterface() {
             placeholder="Ask a question..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-lg bg-gray-800 border border-gray-700 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-arctic-muted/40 focus:ring-1 focus:ring-arctic-muted/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none rounded-lg bg-bg-elevated border border-white/[0.07] px-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-neon-magenta/40 focus:ring-1 focus:ring-neon-magenta/20 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             onClick={() => submitQuestion(inputValue)}
             disabled={isLoading || inputValue.trim().length === 0}
-            className="shrink-0 rounded-lg bg-arctic hover:bg-white text-graphite-950 disabled:bg-graphite-800 disabled:text-arctic-dim px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="shrink-0 rounded-lg bg-neon-magenta hover:bg-white text-white hover:text-bg-primary disabled:bg-bg-elevated disabled:text-text-muted px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
             Send
           </button>
         </div>
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-[10px] text-text-muted mt-2">
           Enter to send &middot; Shift+Enter for newline
         </p>
       </div>
@@ -310,13 +310,13 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700/50 flex items-center justify-center mb-4">
-        <span className="text-arctic text-lg">?</span>
+      <div className="w-10 h-10 rounded-lg bg-bg-elevated border border-white/[0.07] flex items-center justify-center mb-4">
+        <span className="text-neon-magenta text-lg">?</span>
       </div>
-      <h2 className="text-sm font-medium text-gray-300 mb-1">
+      <h2 className="text-sm font-medium font-display text-text-primary mb-1">
         Ask your knowledge vault
       </h2>
-      <p className="text-xs text-gray-500 mb-6 max-w-sm">
+      <p className="text-xs text-text-muted mb-6 max-w-sm">
         Your documents have been indexed into navigable trees.
         Ask a question and the system will reason through the structure to find answers.
       </p>
@@ -325,7 +325,7 @@ function EmptyState({
           <button
             key={q}
             onClick={() => onExampleClick(q)}
-            className="text-left text-xs text-gray-400 hover:text-gray-200 bg-gray-800/50 hover:bg-gray-800 border border-gray-700/40 hover:border-gray-600/60 rounded-lg px-4 py-2.5 transition-colors cursor-pointer"
+            className="text-left text-xs text-text-muted hover:text-text-primary bg-bg-elevated/50 hover:bg-bg-elevated border border-white/[0.07] hover:border-white/[0.12] rounded-lg px-4 py-2.5 transition-colors cursor-pointer"
           >
             {q}
           </button>

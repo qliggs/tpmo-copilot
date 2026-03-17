@@ -1,10 +1,10 @@
 // POST /api/sync
-// Triggers a Notion → Supabase sync of the Book of Work database.
+// Triggers a Notion -> Supabase sync of both the Book of Work and Engineers databases.
 // Protected by INGEST_SECRET (same auth pattern as /api/ingest).
 // Called manually from the admin UI or nightly via Vercel cron.
 
 import { NextRequest, NextResponse } from "next/server";
-import { syncNotionToSupabase } from "@/lib/notion-sync";
+import { syncNotionToSupabase, syncEngineersFromNotion } from "@/lib/notion-sync";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,11 +39,15 @@ export async function POST(request: NextRequest) {
     }
 
     const trigger = triggered_by === "cron" ? "cron" as const : "manual" as const;
-    const result = await syncNotionToSupabase(trigger);
+    const [projectResult, engineerResult] = await Promise.all([
+      syncNotionToSupabase(trigger),
+      syncEngineersFromNotion(trigger),
+    ]);
 
     return NextResponse.json({
       success: true,
-      ...result,
+      projects: projectResult,
+      engineers: engineerResult,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
@@ -52,7 +56,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET handler for Vercel cron — cron jobs send GET requests
+// GET handler for Vercel cron -- cron jobs send GET requests
 export async function GET(request: NextRequest) {
   // Verify cron secret via Authorization header (Vercel sets CRON_SECRET)
   const authHeader = request.headers.get("authorization");
@@ -63,11 +67,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await syncNotionToSupabase("cron");
+    const [projectResult, engineerResult] = await Promise.all([
+      syncNotionToSupabase("cron"),
+      syncEngineersFromNotion("cron"),
+    ]);
 
     return NextResponse.json({
       success: true,
-      ...result,
+      projects: projectResult,
+      engineers: engineerResult,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";

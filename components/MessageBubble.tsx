@@ -38,8 +38,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       <div
         className={`max-w-[85%] rounded-lg px-4 py-3 ${
           isUser
-            ? "bg-gray-700/60 text-gray-100"
-            : "bg-gray-800 border border-gray-700/50 text-gray-100"
+            ? "bg-bg-elevated/60 text-text-primary"
+            : "bg-bg-elevated border border-white/[0.07] text-text-primary"
         }`}
       >
         {/* Message content */}
@@ -54,16 +54,16 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Footer: latency + reasoning toggle */}
         {!isUser && (message.reasoning || message.latency_ms) && (
-          <div className="mt-3 pt-2 border-t border-gray-700/50 flex items-center gap-3">
+          <div className="mt-3 pt-2 border-t border-white/[0.07] flex items-center gap-3">
             {message.latency_ms && (
-              <span className="text-[10px] font-mono text-gray-500">
+              <span className="text-[10px] font-mono text-text-muted">
                 {(message.latency_ms / 1000).toFixed(1)}s
               </span>
             )}
             {message.reasoning && (
               <button
                 onClick={() => setShowReasoning((prev) => !prev)}
-                className="text-[10px] font-mono text-gray-500 hover:text-arctic transition-colors cursor-pointer"
+                className="text-[10px] font-mono text-text-muted hover:text-neon-magenta transition-colors cursor-pointer"
               >
                 {showReasoning ? "Hide reasoning" : "Show reasoning"}
               </button>
@@ -73,11 +73,11 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Reasoning trace (collapsible) */}
         {showReasoning && message.reasoning && (
-          <div className="mt-2 p-3 rounded bg-gray-900/80 border border-gray-700/40">
-            <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">
+          <div className="mt-2 p-3 rounded bg-bg-surface/80 border border-white/[0.07]">
+            <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest mb-2">
               Reasoning Trace
             </p>
-            <pre className="text-xs font-mono text-gray-400 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+            <pre className="text-xs font-mono text-text-muted whitespace-pre-wrap leading-relaxed overflow-x-auto">
               {message.reasoning}
             </pre>
           </div>

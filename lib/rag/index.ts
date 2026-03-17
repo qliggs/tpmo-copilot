@@ -1,7 +1,8 @@
 // RAG Pipeline Orchestrator
-// Routes queries through two modes:
+// Routes queries through three modes:
 //   Mode A (vault): 3-step reasoning-based retrieval from Obsidian docs
 //   Mode B (portfolio): Direct SQL query against the projects table
+//   Mode C (capacity): Engineer allocation + project data query
 // Logs results to query_log table in Supabase.
 
 import { supabaseAdmin as getAdmin } from "@/lib/supabase";
@@ -14,6 +15,11 @@ import {
   streamPortfolioAnswer,
   hasPortfolioData,
 } from "./portfolio-query";
+import {
+  hasEngineerData,
+  streamEngineerAnswer,
+  queryEngineers,
+} from "./engineer-query";
 import {
   getHistory,
   formatHistoryForPrompt,
@@ -102,8 +108,44 @@ export async function runRAGQuery(
   const mode = detectQueryMode(question);
   reasoningParts.push(`[Mode Detection] Query classified as: ${mode}`);
 
+  // -- Mode C: Capacity/Engineer Query ----------------------------------------
+  if (mode === "capacity") {
+    const hasEngineers = await hasEngineerData(getAdmin());
+
+    if (hasEngineers) {
+      const engineerResult = await queryEngineers(enrichedQuestion, getAdmin());
+      llmCalls++;
+      reasoningParts.push(
+        `[Capacity Query] Queried ${engineerResult.engineerCount} engineers and ${engineerResult.projectCount} projects.`,
+      );
+
+      const result: RAGResult = Object.freeze({
+        answer: engineerResult.answer,
+        sources: [
+          { filename: "Engineers (Notion)", section_path: ["Capacity Data"] },
+          { filename: "Book of Work (Notion)", section_path: ["Portfolio Data"] },
+        ],
+        reasoning: reasoningParts.join("\n\n"),
+        latency_ms: elapsed(start),
+        total_llm_calls: llmCalls,
+      });
+
+      await logQuery(question, result);
+      if (sessionId) {
+        await saveMessage(sessionId, "user", question);
+        await saveMessage(sessionId, "assistant", result.answer);
+      }
+      return result;
+    }
+
+    // No engineer data — fall through to portfolio mode
+    reasoningParts.push(
+      "[Capacity Fallback] No engineers in database. Trying portfolio mode.",
+    );
+  }
+
   // -- Mode B: Portfolio Query (with fallback to vault) ------------------------
-  if (mode === "portfolio") {
+  if (mode === "portfolio" || mode === "capacity") {
     const hasData = await hasPortfolioData(getAdmin());
 
     if (hasData) {
@@ -237,8 +279,48 @@ export async function streamRAGQuery(
   const mode = detectQueryMode(question);
   reasoningParts.push(`[Mode Detection] Query classified as: ${mode}`);
 
+  // -- Mode C: Capacity/Engineer Query ----------------------------------------
+  if (mode === "capacity") {
+    const hasEngineers = await hasEngineerData(getAdmin());
+
+    if (hasEngineers) {
+      const engineerResult = await streamEngineerAnswer(
+        enrichedQuestion,
+        getAdmin(),
+        onChunk,
+      );
+      llmCalls++;
+      reasoningParts.push(
+        `[Capacity Query] Queried ${engineerResult.engineerCount} engineers and ${engineerResult.projectCount} projects.`,
+      );
+
+      const result: RAGResult = Object.freeze({
+        answer: engineerResult.answer,
+        sources: [
+          { filename: "Engineers (Notion)", section_path: ["Capacity Data"] },
+          { filename: "Book of Work (Notion)", section_path: ["Portfolio Data"] },
+        ],
+        reasoning: reasoningParts.join("\n\n"),
+        latency_ms: elapsed(start),
+        total_llm_calls: llmCalls,
+      });
+
+      await logQuery(question, result);
+      if (sessionId) {
+        await saveMessage(sessionId, "user", question);
+        await saveMessage(sessionId, "assistant", result.answer);
+      }
+      return result;
+    }
+
+    // No engineer data — fall through to portfolio mode
+    reasoningParts.push(
+      "[Capacity Fallback] No engineers in database. Trying portfolio mode.",
+    );
+  }
+
   // -- Mode B: Portfolio Query (with fallback to vault) ------------------------
-  if (mode === "portfolio") {
+  if (mode === "portfolio" || mode === "capacity") {
     const hasData = await hasPortfolioData(getAdmin());
 
     if (hasData) {

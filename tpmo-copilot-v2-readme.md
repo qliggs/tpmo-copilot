@@ -2,7 +2,7 @@
 
 A personal AI assistant that reads years of TPM documentation and live portfolio data, then answers questions in plain English — like having a second brain that knows both your work history and what's happening right now.
 
-**Live:** https://tpmo-copilot.vercel.app
+**Live:** [https://tpmo-copilot.vercel.app](https://tpmo-copilot.vercel.app)
 
 ---
 
@@ -12,15 +12,15 @@ Ask it a question in plain English. It reads the right data source, finds the mo
 
 **Example queries (real outputs):**
 
-> *"What were my biggest accomplishments in the Snowflake migration?"*
+> _"What were my biggest accomplishments in the Snowflake migration?"_
 
 Returns a structured breakdown across program delivery and technical outcomes — program architecture, enterprise readiness orchestration, failover night execution, stakeholder alignment, post-cutover stabilization — with citations pointing to the exact document sections it pulled from.
 
-> *"How many High priority projects does Endpoint Engineering own? And what are their deliverables?"*
+> _"How many High priority projects does Endpoint Engineering own? And what are their deliverables?"_
 
 Returns a live structured table from the Notion Book of Work — initiative, status, size, resources, quarter, and full deliverable text — synthesized from the actual portfolio database. 17.8 seconds.
 
-> *"Tell me more about the first one."*
+> _"Tell me more about the first one."_
 
 With conversational memory active, follow-up questions build on prior context automatically. No repeating yourself.
 
@@ -105,7 +105,7 @@ Each pipeline task routes to the cheapest capable model:
 
 Answer generation stays on Claude Sonnet — quality matters for the user-facing output. The savings on Steps 1+2 subsidize keeping the best model where it counts.
 
-**Fallback chains** (automatic, no user action required):
+**Fallback chains (automatic, no user action required):**
 - Query Steps 1+2: OpenRouter → Anthropic
 - Ingestion: OpenRouter → Anthropic (streaming)
 - `INFERENCE_MODE=claude-only` reverts all steps to Anthropic (debug mode)
@@ -129,7 +129,6 @@ Sources + latency appear on stream close
 ```
 
 SSE wire format:
-
 ```
 data: {"type":"chunk","text":"The "}
 data: {"type":"chunk","text":"Snowflake "}
@@ -271,12 +270,12 @@ conversation_history (id, session_id, role, content, query_id, created_at)
 
 | Version | Description | Status |
 |---|---|---|
-| V0 | Vectorless RAG over Obsidian vault (Anthropic only) | Done |
-| V0.5 | Hybrid inference — OpenRouter + Anthropic, 90% cost reduction | Done |
-| V1 | Notion integration — live portfolio data, dual-mode routing, launchd automation | Done |
-| V2 | Auth, streaming, conversational memory, UI/UX redesign, portfolio dashboard | Done |
-| V2.1 | Portfolio Intelligence Dashboard — Gantt, capacity, engineer tracking | Next |
-| V3 | Intelligence layer — proactive alerts, cross-source synthesis, richer data | Planned |
+| V0 | Vectorless RAG over Obsidian vault (Anthropic only) | ✅ Complete |
+| V0.5 | Hybrid inference — OpenRouter + Anthropic, 90% cost reduction | ✅ Complete |
+| V1 | Notion integration — live portfolio data, dual-mode routing, launchd automation | ✅ Complete |
+| V2 | Auth, streaming, conversational memory, UI/UX redesign, portfolio dashboard | ✅ Complete |
+| V2.1 | Portfolio Intelligence Dashboard — Gantt, capacity, engineer tracking | 🔜 Next |
+| V3 | Intelligence layer — proactive alerts, cross-source synthesis, richer data |Planned |
 | V4 | Platform — Discord, Slack, digest, multi-user | Planned |
 
 ---
@@ -294,3 +293,8 @@ conversation_history (id, session_id, role, content, query_id, created_at)
 **Why `window.location.href` instead of `router.push()` for login redirect?** Next.js App Router's `router.push()` performs a soft client-side navigation. The middleware runs in the edge runtime where the just-set session cookie may not yet be visible, causing a silent redirect back to `/login`. Hard navigation with `window.location.href` sends a full HTTP request with the cookie included, so middleware sees it correctly.
 
 **Why Notion over a custom database for portfolio data?** Notion already had the Book of Work structured as a proper database with a first-class REST API. No data migration required, no custom editing UI to build. The integration is a sync job, not a rebuild.
+
+---
+
+_Built by Quentin Liggins — Technical Program Manager, LendingTree_
+_GitHub: github.com/qliggs/tpmo-copilot_
