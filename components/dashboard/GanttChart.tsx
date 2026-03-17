@@ -19,26 +19,31 @@ interface GanttProject {
 
 interface GanttChartProps {
   readonly projects: readonly GanttProject[];
-  readonly view: "date" | "initiative" | "quarter";
+  readonly view: "date" | "initiative" | "quarter" | "team";
   readonly periodRange?: { readonly start: string; readonly end: string };
+  readonly selectedTeam?: string;
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const PRIORITY_COLORS: Readonly<Record<string, string>> = {
-  "P0": "#E8417A",   // Critical — neon-magenta
-  "P1": "#F4785A",   // High — neon-coral
-  "P2": "#8B4FC8",   // Medium — neon-violet
-  "P3": "#7A7A85",   // Low — text-muted
+const TEAM_COLORS: Readonly<Record<string, string>> = {
+  "Endpoint Engineering": "#F4785A",
+  "Productivity Apps": "#8B4FC8",
+  "Infrastructure": "#F5D06A",
+  "Service Desk": "#C4A0E0",
+  "NetOps": "#E8417A",
+  "TPMO": "#F2F2F4",
 };
 
-const PRIORITY_LABELS: readonly { readonly key: string; readonly label: string; readonly color: string }[] = [
-  { key: "P0", label: "Critical", color: "#E8417A" },
-  { key: "P1", label: "High", color: "#F4785A" },
-  { key: "P2", label: "Medium", color: "#8B4FC8" },
-  { key: "P3", label: "Low", color: "#7A7A85" },
+const TEAM_LEGEND: readonly { readonly team: string; readonly color: string }[] = [
+  { team: "Endpoint Eng", color: "#F4785A" },
+  { team: "Productivity", color: "#8B4FC8" },
+  { team: "Infrastructure", color: "#F5D06A" },
+  { team: "Service Desk", color: "#C4A0E0" },
+  { team: "NetOps", color: "#E8417A" },
+  { team: "TPMO", color: "#F2F2F4" },
 ];
 
 const DEFAULT_COLOR = "#3A3A3F";
@@ -47,7 +52,6 @@ const ROW_HEIGHT = 32;
 const LABEL_WIDTH = 220;
 const CHART_PADDING = 16;
 const HEADER_HEIGHT = 40;
-const MIN_BAR_LABEL_WIDTH = 80;
 
 // ---------------------------------------------------------------------------
 // Quarter-to-end-date fallback mapping
@@ -66,7 +70,6 @@ const QUARTER_END_DATES: Readonly<Record<string, string>> = {
 function deriveEndDate(project: GanttProject): string | null {
   if (project.end_date) return project.end_date;
 
-  // Derive from quarter/period tag
   if (project.quarter) {
     const q = project.quarter.toUpperCase().trim();
     for (const [key, date] of Object.entries(QUARTER_END_DATES)) {
@@ -80,8 +83,8 @@ function deriveEndDate(project: GanttProject): string | null {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getBarColor(priority: string | null): string {
-  return PRIORITY_COLORS[priority ?? ""] ?? DEFAULT_COLOR;
+function getTeamColor(team: string | null): string {
+  return TEAM_COLORS[team ?? ""] ?? DEFAULT_COLOR;
 }
 
 function parseDate(dateStr: string | null): Date | null {
@@ -91,7 +94,11 @@ function parseDate(dateStr: string | null): Date | null {
 }
 
 function formatMonthLabel(date: Date): string {
-  return date.toLocaleString("en-US", { month: "short", year: "2-digit" });
+  return date.toLocaleString("en-US", { month: "short" });
+}
+
+function isQuarterBoundary(month: number): boolean {
+  return month % 3 === 0;
 }
 
 function groupByKey(
@@ -108,10 +115,20 @@ function groupByKey(
 }
 
 // ---------------------------------------------------------------------------
+// Row data type (supports group headers)
+// ---------------------------------------------------------------------------
+
+interface GanttRow {
+  readonly type: "project" | "header";
+  readonly project?: GanttProject;
+  readonly label: string;
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function GanttChart({ projects, view, periodRange }: GanttChartProps) {
+export default function GanttChart({ projects, view, periodRange, selectedTeam }: GanttChartProps) {
   if (projects.length === 0) {
     return (
       <p className="text-xs text-text-muted">No project data for Gantt chart.</p>
@@ -124,8 +141,8 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
     end_date: deriveEndDate(p),
   }));
 
-  // Sort and group projects based on view mode
-  const sortedProjects = getSortedProjects(projectsWithDates, view);
+  // Build rows with optional group headers
+  const rows = buildRows(projectsWithDates, view);
 
   // Compute time range
   const now = new Date();
@@ -134,25 +151,14 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
   let rangeEnd: Date;
 
   if (periodRange) {
-    // Use the period range for quarter view
     rangeStart = new Date(periodRange.start);
     rangeEnd = new Date(periodRange.end);
   } else {
-    const dates = projectsWithDates
-      .flatMap((p) => [parseDate(p.start_date), parseDate(p.end_date)])
-      .filter((d): d is Date => d !== null);
-
-    const minDate = dates.length > 0
-      ? new Date(Math.min(...dates.map((d) => d.getTime())))
-      : new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const maxDate = dates.length > 0
-      ? new Date(Math.max(...dates.map((d) => d.getTime())))
-      : new Date(now.getFullYear(), now.getMonth() + 6, 0);
-
-    // Add padding: 1 month before and after
-    rangeStart = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-    rangeEnd = new Date(maxDate.getFullYear(), maxDate.getMonth() + 2, 0);
+    // Default: current quarter + 2 quarters ahead (3 quarters total)
+    const currentMonth = now.getMonth();
+    const qStart = Math.floor(currentMonth / 3) * 3;
+    rangeStart = new Date(now.getFullYear(), qStart, 1);
+    rangeEnd = new Date(now.getFullYear(), qStart + 9, 0);
   }
 
   const totalDays = Math.max(
@@ -160,15 +166,17 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
     30,
   );
 
-  // Generate month ticks
+  // Generate month ticks — only at quarter boundaries for decluttered axis
   const monthTicks: { label: string; x: number }[] = [];
   const tickDate = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
   while (tickDate <= rangeEnd) {
-    const dayOffset = (tickDate.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24);
-    monthTicks.push({
-      label: formatMonthLabel(tickDate),
-      x: dayOffset,
-    });
+    if (isQuarterBoundary(tickDate.getMonth())) {
+      const dayOffset = (tickDate.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24);
+      monthTicks.push({
+        label: formatMonthLabel(tickDate),
+        x: dayOffset,
+      });
+    }
     tickDate.setMonth(tickDate.getMonth() + 1);
   }
 
@@ -176,10 +184,13 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
   const chartWidth = 800;
   const totalWidth = LABEL_WIDTH + chartWidth + CHART_PADDING * 2;
   const legendHeight = 30;
-  const totalHeight = HEADER_HEIGHT + sortedProjects.length * ROW_HEIGHT + CHART_PADDING + legendHeight;
+  const totalHeight = HEADER_HEIGHT + rows.length * ROW_HEIGHT + CHART_PADDING + legendHeight;
 
   const dayToX = (days: number) =>
     LABEL_WIDTH + CHART_PADDING + (days / totalDays) * chartWidth;
+
+  // In team view, use slightly more opaque fill
+  const isTeamView = view === "team";
 
   return (
     <div className="overflow-x-auto">
@@ -231,17 +242,44 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
           return null;
         })()}
 
-        {/* Project rows */}
-        {sortedProjects.map((project, i) => {
+        {/* Rows */}
+        {rows.map((row, i) => {
           const y = HEADER_HEIGHT + i * ROW_HEIGHT;
+
+          // Group header row
+          if (row.type === "header") {
+            return (
+              <g key={`header-${i}`}>
+                <line
+                  x1={0}
+                  y1={y}
+                  x2={totalWidth}
+                  y2={y}
+                  stroke="#7A7A85"
+                  strokeOpacity={0.15}
+                />
+                <text
+                  x={8}
+                  y={y + ROW_HEIGHT / 2 + 4}
+                  fill="#7A7A85"
+                  fontSize={11}
+                  fontWeight="600"
+                >
+                  {row.label}
+                </text>
+              </g>
+            );
+          }
+
+          const project = row.project!;
           const start = parseDate(project.start_date);
           const end = parseDate(project.end_date);
-          const color = getBarColor(project.priority);
+          const teamColor = getTeamColor(project.team);
 
           // Label (left column)
-          const labelText = project.name.length > 26
-            ? project.name.slice(0, 24) + "..."
-            : project.name;
+          const labelText = row.label.length > 26
+            ? row.label.slice(0, 24) + "..."
+            : row.label;
 
           if (!start && !end) {
             return (
@@ -271,7 +309,6 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
             ? (start.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24)
             : 0;
 
-          // Clamp end date to chart range
           const rawEndDay = end
             ? (end.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24)
             : totalDays;
@@ -281,11 +318,12 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
           const barEndX = dayToX(endDay);
           const barWidth = Math.max(barEndX - barX, 4);
 
-          // Determine if bar is wide enough for inline label
-          const showInlineLabel = barWidth >= MIN_BAR_LABEL_WIDTH;
-          const barLabelText = project.name.length > 20
-            ? project.name.slice(0, 18) + "..."
-            : project.name;
+          // Deliverable name inside bar (initiative and team views)
+          const showInlineLabel = (view === "initiative" || view === "team") && barWidth >= 100;
+          const inlineName = project.deliverable ?? project.name;
+          const barLabelText = inlineName.length > 20
+            ? inlineName.slice(0, 18) + "..."
+            : inlineName;
 
           return (
             <g key={`row-${i}`}>
@@ -309,15 +347,19 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
               >
                 {labelText}
               </text>
-              {/* Bar */}
+              {/* Bar — near-black fill with team-colored border + glow */}
               <rect
                 x={barX}
                 y={y + 6}
                 width={barWidth}
                 height={ROW_HEIGHT - 12}
                 rx={4}
-                fill={color}
-                fillOpacity={0.8}
+                fill={isTeamView ? `${teamColor}22` : "rgba(255,255,255,0.04)"}
+                stroke={teamColor}
+                strokeWidth={1.5}
+                style={{
+                  filter: `drop-shadow(0 0 6px ${teamColor}66)`,
+                }}
               >
                 <title>
                   {project.name} ({project.priority ?? project.status ?? "Unknown"})
@@ -333,7 +375,6 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
                   fill="#FFFFFF"
                   fontSize={11}
                   fontFamily="monospace"
-                  clipPath={`inset(0 ${Math.max(0, totalWidth - barX - barWidth)}px 0 0)`}
                 >
                   {barLabelText}
                 </text>
@@ -342,15 +383,15 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
           );
         })}
 
-        {/* Legend */}
-        {PRIORITY_LABELS.map((item, i) => {
-          const legendX = LABEL_WIDTH + CHART_PADDING + i * 120;
+        {/* Legend — team colors */}
+        {TEAM_LEGEND.map((item, i) => {
+          const legendX = LABEL_WIDTH + CHART_PADDING + i * 110;
           const legendY = totalHeight - legendHeight + 10;
           return (
-            <g key={item.key}>
-              <rect x={legendX} y={legendY} width={10} height={10} rx={2} fill={item.color} fillOpacity={0.8} />
-              <text x={legendX + 14} y={legendY + 9} fill="#7A7A85" fontSize={11} fontFamily="monospace">
-                {item.label}
+            <g key={item.team}>
+              <rect x={legendX} y={legendY} width={10} height={10} rx={2} fill="rgba(255,255,255,0.04)" stroke={item.color} strokeWidth={1.5} />
+              <text x={legendX + 14} y={legendY + 9} fill="#7A7A85" fontSize={10} fontFamily="monospace">
+                {item.team}
               </text>
             </g>
           );
@@ -361,30 +402,38 @@ export default function GanttChart({ projects, view, periodRange }: GanttChartPr
 }
 
 // ---------------------------------------------------------------------------
-// Sorting / grouping logic
+// Row building logic
 // ---------------------------------------------------------------------------
 
-function getSortedProjects(
+function buildRows(
   projects: readonly GanttProject[],
-  view: "date" | "initiative" | "quarter",
-): readonly GanttProject[] {
+  view: "date" | "initiative" | "quarter" | "team",
+): readonly GanttRow[] {
   switch (view) {
-    case "initiative": {
+    case "initiative":
+    case "team": {
       const grouped = groupByKey(projects, (p) => p.theme ?? "Ungrouped");
-      const result: GanttProject[] = [];
-      for (const [, group] of grouped) {
-        const sorted = [...group].sort((a, b) => {
+      const rows: GanttRow[] = [];
+      for (const [group, items] of grouped) {
+        rows.push({ type: "header", label: group });
+        const sorted = [...items].sort((a, b) => {
           const aDate = a.start_date ?? "9999";
           const bDate = b.start_date ?? "9999";
           return aDate.localeCompare(bDate);
         });
-        result.push(...sorted);
+        for (const p of sorted) {
+          rows.push({
+            type: "project",
+            project: p,
+            label: p.deliverable ?? p.name,
+          });
+        }
       }
-      return result;
+      return rows;
     }
     case "quarter": {
       const grouped = groupByKey(projects, (p) => p.quarter ?? "Unscheduled");
-      const result: GanttProject[] = [];
+      const rows: GanttRow[] = [];
       const sortedKeys = [...grouped.keys()].sort();
       for (const key of sortedKeys) {
         const group = grouped.get(key) ?? [];
@@ -393,17 +442,20 @@ function getSortedProjects(
           const bDate = b.start_date ?? "9999";
           return aDate.localeCompare(bDate);
         });
-        result.push(...sorted);
+        for (const p of sorted) {
+          rows.push({ type: "project", project: p, label: p.name });
+        }
       }
-      return result;
+      return rows;
     }
     case "date":
     default: {
-      return [...projects].sort((a, b) => {
+      const sorted = [...projects].sort((a, b) => {
         const aDate = a.start_date ?? "9999";
         const bDate = b.start_date ?? "9999";
         return aDate.localeCompare(bDate);
       });
+      return sorted.map((p) => ({ type: "project" as const, project: p, label: p.name }));
     }
   }
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import GanttChart from "./GanttChart";
 
-type GanttView = "date" | "initiative" | "quarter";
+type GanttView = "date" | "initiative" | "quarter" | "team";
 
 interface GanttProject {
   readonly name: string;
@@ -20,6 +21,30 @@ interface GanttProject {
 interface GanttChartClientProps {
   readonly projects: readonly GanttProject[];
 }
+
+// ---------------------------------------------------------------------------
+// Tab definitions
+// ---------------------------------------------------------------------------
+
+const GANTT_TABS = [
+  { id: "date", label: "Date" },
+  { id: "initiative", label: "Initiative" },
+  { id: "quarter", label: "Quarter" },
+  { id: "team", label: "Team" },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Team definitions
+// ---------------------------------------------------------------------------
+
+const TEAMS = [
+  "Endpoint Engineering",
+  "Productivity Apps",
+  "Infrastructure",
+  "Service Desk",
+  "NetOps",
+  "TPMO",
+] as const;
 
 // ---------------------------------------------------------------------------
 // Period definitions
@@ -44,56 +69,79 @@ function getCurrentQuarterLabel(): string {
   return "Q4 2026";
 }
 
+function getTeamViewRange(): { start: string; end: string } {
+  const now = new Date();
+  const month = now.getMonth();
+  const qStart = Math.floor(month / 3) * 3;
+  const start = new Date(now.getFullYear(), qStart, 1);
+  const end = new Date(now.getFullYear(), qStart + 6, 0);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
 export default function GanttChartClient({ projects }: GanttChartClientProps) {
   const [view, setView] = useState<GanttView>("date");
   const [selectedPeriod, setSelectedPeriod] = useState(getCurrentQuarterLabel());
+  const [selectedTeam, setSelectedTeam] = useState<string>(TEAMS[0]);
 
   const period = PERIODS.find((p) => p.label === selectedPeriod) ?? PERIODS[1];
 
-  // Filter projects to selected period window (when in quarter view)
+  // Filter projects based on view
   const filteredProjects = useMemo(() => {
-    if (view !== "quarter") return projects;
+    let result = [...projects];
 
-    const windowStart = new Date(period.start).getTime();
-    const windowEnd = new Date(period.end).getTime();
+    if (view === "quarter") {
+      const windowStart = new Date(period.start).getTime();
+      const windowEnd = new Date(period.end).getTime();
 
-    return projects.filter((p) => {
-      const start = p.start_date ? new Date(p.start_date).getTime() : null;
-      const end = p.end_date ? new Date(p.end_date).getTime() : null;
+      result = result.filter((p) => {
+        const start = p.start_date ? new Date(p.start_date).getTime() : null;
+        const end = p.end_date ? new Date(p.end_date).getTime() : null;
 
-      // Include if project overlaps the window
-      if (start !== null && end !== null) {
-        return start <= windowEnd && end >= windowStart;
-      }
-      if (start !== null) {
-        return start <= windowEnd && start >= windowStart;
-      }
-      // Match by quarter tag
-      if (p.quarter) {
-        const q = p.quarter.toUpperCase().trim();
-        const periodKey = selectedPeriod.replace(" 2026", "").toUpperCase();
-        return q.includes(periodKey) || q === "ANNUAL";
-      }
-      return true;
-    });
-  }, [projects, view, period, selectedPeriod]);
+        if (start !== null && end !== null) {
+          return start <= windowEnd && end >= windowStart;
+        }
+        if (start !== null) {
+          return start <= windowEnd && start >= windowStart;
+        }
+        if (p.quarter) {
+          const q = p.quarter.toUpperCase().trim();
+          const periodKey = selectedPeriod.replace(" 2026", "").toUpperCase();
+          return q.includes(periodKey) || q === "ANNUAL";
+        }
+        return true;
+      });
+    }
+
+    if (view === "team") {
+      result = result.filter((p) => p.team === selectedTeam);
+    }
+
+    return result;
+  }, [projects, view, period, selectedPeriod, selectedTeam]);
+
+  // Compute period range for team/quarter views
+  const periodRange = useMemo(() => {
+    if (view === "quarter") {
+      return { start: period.start, end: period.end };
+    }
+    if (view === "team") {
+      return getTeamViewRange();
+    }
+    return undefined;
+  }, [view, period]);
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
-        {(["date", "initiative", "quarter"] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              view === v
-                ? "bg-neon-magenta text-white"
-                : "bg-bg-elevated text-text-muted hover:text-text-primary"
-            }`}
-          >
-            {v.charAt(0).toUpperCase() + v.slice(1)}
-          </button>
-        ))}
+      {/* AnimatedTabs — active bubble uses neon-magenta */}
+      <div className="mb-4 [&_span[class*='bg-primary']]:!bg-neon-magenta">
+        <AnimatedTabs
+          tabs={[...GANTT_TABS]}
+          defaultTab="date"
+          onChange={(tabId) => setView(tabId as GanttView)}
+        />
       </div>
 
       {/* Period selector — visible in quarter view */}
@@ -103,7 +151,7 @@ export default function GanttChartClient({ projects }: GanttChartClientProps) {
             <button
               key={p.label}
               onClick={() => setSelectedPeriod(p.label)}
-              className={`rounded-full px-3 py-1 text-[11px] font-mono font-medium transition border ${
+              className={`rounded-full px-3 py-1 text-[11px] font-mono font-medium transition border cursor-pointer ${
                 selectedPeriod === p.label
                   ? "bg-neon-magenta text-white border-neon-magenta"
                   : "bg-bg-elevated text-text-muted border-white/[0.07] hover:text-text-primary"
@@ -115,10 +163,30 @@ export default function GanttChartClient({ projects }: GanttChartClientProps) {
         </div>
       )}
 
+      {/* Team selector — visible in team view */}
+      {view === "team" && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {TEAMS.map((team) => (
+            <button
+              key={team}
+              onClick={() => setSelectedTeam(team)}
+              className={`rounded-full px-3 py-1 text-[11px] font-mono font-medium transition border cursor-pointer ${
+                selectedTeam === team
+                  ? "bg-neon-magenta text-white border-neon-magenta"
+                  : "bg-bg-elevated text-text-muted border-white/[0.07] hover:text-text-primary"
+              }`}
+            >
+              {team}
+            </button>
+          ))}
+        </div>
+      )}
+
       <GanttChart
         projects={filteredProjects}
         view={view}
-        periodRange={view === "quarter" ? { start: period.start, end: period.end } : undefined}
+        periodRange={periodRange}
+        selectedTeam={view === "team" ? selectedTeam : undefined}
       />
     </div>
   );

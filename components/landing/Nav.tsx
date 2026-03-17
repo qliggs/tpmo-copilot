@@ -28,7 +28,7 @@ export default function Nav() {
           </a>
           <Link
             href="/chat"
-            className="rounded-lg bg-neon-magenta px-4 py-2 text-sm font-semibold text-white transition hover:bg-neon-magenta/90"
+            className="rounded-lg border border-neon-magenta bg-transparent px-4 py-2 text-sm font-semibold text-neon-magenta transition hover:bg-neon-magenta hover:text-white"
           >
             Launch
           </Link>

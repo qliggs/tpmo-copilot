@@ -94,18 +94,18 @@ export default async function DashboardPage() {
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Page header */}
           <div>
-            <h1 className="font-display text-lg font-semibold tracking-tight text-text-primary">
+            <h1 className="font-display text-3xl font-bold tracking-tight text-text-primary">
               Portfolio Dashboard
             </h1>
-            <p className="mt-0.5 text-xs text-text-muted">Book of Work overview</p>
+            <p className="mt-1 text-base text-text-muted">Book of Work overview</p>
           </div>
 
           {/* Stat cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total Projects" value={stats.total} />
-            <StatCard label="Active" value={stats.active} />
-            <StatCard label="Total Resources" value={stats.totalResources} />
-            <StatCard label="Teams" value={stats.teamCount} />
+            <StatCard label="Total Projects" value={stats.total} accentColor="#E8417A" />
+            <StatCard label="Active" value={stats.active} accentColor="#F4785A" />
+            <StatCard label="Total Resources" value={stats.totalResources} accentColor="#F5D06A" />
+            <StatCard label="Teams" value={stats.teamCount} accentColor="#8B4FC8" />
           </div>
 
           {/* Gantt chart — defaultOpen */}

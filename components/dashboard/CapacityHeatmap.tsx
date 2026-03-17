@@ -8,23 +8,14 @@ interface CapacityHeatmapProps {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers — monochromatic magenta intensity
 // ---------------------------------------------------------------------------
 
-/** Map utilization to a background color class. */
-function getCellColor(pct: number): string {
-  if (pct > 100) return "bg-danger";
-  if (pct > 80) return "bg-neon-coral";
-  if (pct > 60) return "bg-neon-gold";
-  return "bg-success";
-}
-
-/** Map utilization to text color for contrast. */
-function getCellTextColor(pct: number): string {
-  if (pct > 100) return "text-white";
-  if (pct > 80) return "text-bg-primary";
-  if (pct > 60) return "text-bg-primary";
-  return "text-bg-primary";
+function getCellStyle(pct: number): { background: string; color: string } {
+  if (pct > 100) return { background: "rgba(232, 65, 122, 0.90)", color: "#FFFFFF" };
+  if (pct > 80) return { background: "rgba(232, 65, 122, 0.60)", color: "#F2F2F4" };
+  if (pct > 60) return { background: "rgba(232, 65, 122, 0.35)", color: "#F2F2F4" };
+  return { background: "rgba(232, 65, 122, 0.15)", color: "#F2F2F4" };
 }
 
 /** Format YYYY-MM to a short label like "Mar 26". */
@@ -41,9 +32,11 @@ function formatMonthShort(monthStr: string): string {
 export default function CapacityHeatmap({ cells }: CapacityHeatmapProps) {
   if (cells.length === 0) {
     return (
-      <p className="text-xs text-text-muted">
-        No capacity data available. Sync engineers from Notion first.
-      </p>
+      <div className="space-y-3">
+        <p className="text-xs text-text-muted">
+          Sync engineers from Notion to enable capacity data.
+        </p>
+      </div>
     );
   }
 
@@ -90,11 +83,13 @@ export default function CapacityHeatmap({ cells }: CapacityHeatmapProps) {
               const cell = lookup.get(team)?.get(month);
               const pct = cell?.utilizationPct ?? 0;
               const fte = cell?.fte ?? 0;
+              const style = fte > 0 ? getCellStyle(pct) : { background: "var(--color-bg-elevated)", color: "var(--color-text-muted)" };
 
               return (
                 <div
                   key={`${team}-${month}`}
-                  className={`flex items-center justify-center rounded-md px-2 py-2 font-mono text-xs font-semibold ${getCellColor(pct)} ${getCellTextColor(pct)}`}
+                  className="flex items-center justify-center rounded-md px-2 py-2 font-mono text-xs font-semibold"
+                  style={{ background: style.background, color: style.color }}
                   title={`${team} - ${formatMonthShort(month)}: ${pct}% utilization (${fte} FTE)`}
                 >
                   {fte > 0 ? `${pct}%` : "\u2014"}
@@ -105,20 +100,16 @@ export default function CapacityHeatmap({ cells }: CapacityHeatmapProps) {
         ))}
       </div>
 
-      {/* Legend */}
-      <div className="mt-3 flex items-center gap-4 text-[10px] text-text-muted">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-success" /> &lt;60%
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-neon-gold" /> 60-80%
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-neon-coral" /> 80-100%
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-danger" /> &gt;100%
-        </span>
+      {/* Legend — gradient swatch */}
+      <div className="mt-3 flex items-center gap-2 text-[10px] text-text-muted">
+        <span>Low load</span>
+        <div
+          className="h-2.5 w-24 rounded-full"
+          style={{
+            background: "linear-gradient(to right, rgba(232,65,122,0.15), rgba(232,65,122,0.90))",
+          }}
+        />
+        <span>Over capacity</span>
       </div>
     </div>
   );

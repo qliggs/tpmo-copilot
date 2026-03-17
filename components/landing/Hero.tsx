@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { TextRewind } from "@/components/ui/text-rewind";
 import { ButtonColorful } from "@/components/ui/button-colorful";
 
 // ---------------------------------------------------------------------------
-// Cycling words animation
+// Cycling words animation — period included in each word
 // ---------------------------------------------------------------------------
 
-const CYCLING_WORDS = ["remembered", "alive", "searchable", "yours"] as const;
+const CYCLING_WORDS = ["remembered.", "searchable.", "structured.", "deployed."] as const;
 
 const CYCLE_INTERVAL_MS = 3000;
 
@@ -30,6 +29,7 @@ const STATUS_PILLS = [
 
 export default function Hero() {
   const [wordIndex, setWordIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -39,7 +39,13 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden px-6 pt-24 pb-20 sm:pt-32 sm:pb-28 lg:pt-40 lg:pb-36">
+    <section
+      className="relative overflow-hidden px-6 pt-24 pb-20 sm:pt-32 sm:pb-28 lg:pt-40 lg:pb-36"
+      style={{
+        background:
+          "radial-gradient(ellipse at 50% -10%, rgba(56,189,248,0.06) 0%, transparent 55%), radial-gradient(ellipse at 85% 80%, rgba(139,79,200,0.05) 0%, transparent 50%), #050507",
+      }}
+    >
       {/* Subtle grid background */}
       <div
         aria-hidden="true"
@@ -51,21 +57,28 @@ export default function Hero() {
         }}
       />
 
-      {/* Gradient glow */}
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/2 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-neon-magenta/5 blur-3xl"
-      />
-
       <div className="mx-auto max-w-4xl text-center">
-        {/* Overline */}
-        <TextRewind
-          text="TPMO INTELLIGENCE"
-          className="text-sm tracking-widest !text-neon-magenta !not-italic !font-mono !font-normal"
-        />
+        {/* Overline — compressed by default, expands leftward on hover */}
+        <div
+          className="flex justify-center mb-6"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <span
+            className="font-mono text-sm font-normal text-neon-magenta uppercase transition-all duration-400 ease-out cursor-default"
+            style={{
+              letterSpacing: isHovered ? "0.25em" : "-0.05em",
+              opacity: isHovered ? 1 : 0.5,
+              transform: isHovered ? "scale(1)" : "scale(0.95)",
+              transformOrigin: "right center",
+            }}
+          >
+            TPMO INTELLIGENCE
+          </span>
+        </div>
 
         {/* Two-line heading */}
-        <h1 className="mt-6 font-display text-4xl font-bold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
+        <h1 className="font-display text-4xl font-bold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
           <span className="block">
             Your knowledge
             <span className="text-neon-gold">,</span>
@@ -86,7 +99,6 @@ export default function Hero() {
                 {CYCLING_WORDS[wordIndex]}
               </motion.span>
             </AnimatePresence>
-            <span className="text-neon-gold">.</span>
           </span>
         </h1>
 
@@ -110,12 +122,13 @@ export default function Hero() {
           </a>
         </div>
 
-        {/* Status pills */}
+        {/* Status pills — neon-gold text + border */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           {STATUS_PILLS.map((pill) => (
             <span
               key={pill}
-              className="rounded-full border border-neon-magenta/20 bg-bg-elevated/50 px-3 py-1 font-mono text-[11px] text-text-muted"
+              className="rounded-full bg-bg-elevated/50 px-3 py-1 font-mono text-[11px] text-neon-gold"
+              style={{ border: "1px solid rgba(245, 208, 106, 0.25)" }}
             >
               {pill}
             </span>

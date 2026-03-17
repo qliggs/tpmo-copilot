@@ -46,11 +46,11 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       >
         {/* Message content */}
         {isUser ? (
-          <div className="text-sm font-sans leading-relaxed whitespace-pre-wrap">
+          <div className="text-base font-sans leading-relaxed whitespace-pre-wrap">
             {message.content}
           </div>
         ) : (
-          <div className="prose-chat text-sm font-sans leading-relaxed">
+          <div className="prose-chat text-base font-sans leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
             </ReactMarkdown>

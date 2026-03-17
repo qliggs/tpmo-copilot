@@ -37,6 +37,17 @@ Format your answer clearly:
 - When comparing teams, use a structured format
 - Always cite specific numbers from the data
 
+When generating tables, use this column priority order:
+1. Project/Initiative name
+2. Deliverable
+3. Team
+4. Status
+5. Priority
+6. Size
+7. Quarter
+
+Do NOT include Theme or Resources columns in default table output. Those may appear in a details section below the table if specifically relevant to the question.
+
 If the data doesn't contain enough information to answer, say so clearly.`;
 
 // ---------------------------------------------------------------------------

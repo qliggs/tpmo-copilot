@@ -35,51 +35,51 @@ function NeonGlowFilter() {
 
 function QueryPipelineDiagram() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
-      <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-4 rounded-md">
+      <svg viewBox="0 0 500 360" className="w-full h-full" fill="none">
         <NeonGlowFilter />
         {/* User Question */}
-        <rect x="70" y="4" width="140" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="21" textAnchor="middle" fill={LABEL_COLOR} fontSize="9" fontFamily="monospace">User Question</text>
+        <rect x="125" y="8" width="250" height="36" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="32" textAnchor="middle" fill={LABEL_COLOR} fontSize="14" fontFamily="monospace">User Question</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="30" x2="140" y2="42" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,40 140,46 144,40" fill={ACCENT_LINE} />
+          <line x1="250" y1="44" x2="250" y2="66" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,62 250,70 255,62" fill={ACCENT_LINE} />
         </g>
 
         {/* Step 1 */}
-        <rect x="20" y="48" width="240" height="32" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="30" y="62" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Step 1</text>
-        <text x="30" y="74" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Doc Selector — DeepSeek V3 — 27 docs → top 5</text>
+        <rect x="50" y="74" width="400" height="54" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="68" y="96" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Step 1</text>
+        <text x="68" y="116" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">Doc Selector — DeepSeek V3 — 27 docs → top 5</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="80" x2="140" y2="92" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,90 140,96 144,90" fill={ACCENT_LINE} />
+          <line x1="250" y1="128" x2="250" y2="150" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,146 250,154 255,146" fill={ACCENT_LINE} />
         </g>
 
         {/* Step 2 */}
-        <rect x="20" y="98" width="240" height="32" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="30" y="112" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Step 2</text>
-        <text x="30" y="124" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Node Selector — Qwen3 30B — 5 docs → top 8 nodes</text>
+        <rect x="50" y="158" width="400" height="54" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="68" y="180" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Step 2</text>
+        <text x="68" y="200" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">Node Selector — Qwen3 30B — 5 docs → top 8</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="130" x2="140" y2="142" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,140 140,146 144,140" fill={ACCENT_LINE} />
+          <line x1="250" y1="212" x2="250" y2="234" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,230 250,238 255,230" fill={ACCENT_LINE} />
         </g>
 
         {/* Step 3 */}
-        <rect x="20" y="148" width="240" height="32" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="30" y="162" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Step 3</text>
-        <text x="30" y="174" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Answer Gen — Claude Sonnet — 8 nodes → answer</text>
+        <rect x="50" y="242" width="400" height="54" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="68" y="264" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Step 3</text>
+        <text x="68" y="284" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">Answer Gen — Claude Sonnet — 8 nodes → answer</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="180" x2="140" y2="192" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,190 140,196 144,190" fill={ACCENT_LINE} />
+          <line x1="250" y1="296" x2="250" y2="318" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,314 250,322 255,314" fill={ACCENT_LINE} />
         </g>
 
         {/* Response */}
-        <rect x="60" y="198" width="160" height="20" rx="4" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
-        <text x="140" y="212" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Response + Citations</text>
+        <rect x="100" y="326" width="300" height="30" rx="6" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
+        <text x="250" y="346" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Response + Citations</text>
       </svg>
     </div>
   );
@@ -91,50 +91,50 @@ function QueryPipelineDiagram() {
 
 function IngestionDiagram() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
-      <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-4 rounded-md">
+      <svg viewBox="0 0 500 360" className="w-full h-full" fill="none">
         <NeonGlowFilter />
         {/* Obsidian files */}
-        <rect x="60" y="6" width="160" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="23" textAnchor="middle" fill={LABEL_COLOR} fontSize="9" fontFamily="monospace">Obsidian .md files</text>
+        <rect x="100" y="10" width="300" height="36" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="34" textAnchor="middle" fill={LABEL_COLOR} fontSize="14" fontFamily="monospace">Obsidian .md files</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="32" x2="140" y2="46" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,44 140,50 144,44" fill={ACCENT_LINE} />
+          <line x1="250" y1="46" x2="250" y2="70" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,66 250,74 255,66" fill={ACCENT_LINE} />
         </g>
 
         {/* vault-reader */}
-        <rect x="30" y="52" width="220" height="30" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="66" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">vault-reader.ts</text>
-        <text x="140" y="77" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">SHA256 delta detection</text>
+        <rect x="60" y="78" width="380" height="54" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="102" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontFamily="monospace">vault-reader.ts</text>
+        <text x="250" y="122" textAnchor="middle" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">SHA256 delta detection</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="82" x2="140" y2="96" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,94 140,100 144,94" fill={ACCENT_LINE} />
+          <line x1="250" y1="132" x2="250" y2="156" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,152 250,160 255,152" fill={ACCENT_LINE} />
         </g>
 
         {/* tree-builder */}
-        <rect x="30" y="102" width="220" height="30" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="116" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">tree-builder.ts</text>
-        <text x="140" y="127" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">AI builds PageIndex JSON tree</text>
+        <rect x="60" y="164" width="380" height="54" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="188" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontFamily="monospace">tree-builder.ts</text>
+        <text x="250" y="208" textAnchor="middle" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">AI builds PageIndex JSON tree</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="132" x2="140" y2="146" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,144 140,150 144,144" fill={ACCENT_LINE} />
+          <line x1="250" y1="218" x2="250" y2="242" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,238 250,246 255,238" fill={ACCENT_LINE} />
         </g>
 
         {/* validate */}
-        <rect x="60" y="152" width="160" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="169" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">validate-tree.ts</text>
+        <rect x="100" y="250" width="300" height="36" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="274" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontFamily="monospace">validate-tree.ts</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="178" x2="140" y2="192" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,190 140,196 144,190" fill={ACCENT_LINE} />
+          <line x1="250" y1="286" x2="250" y2="310" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,306 250,314 255,306" fill={ACCENT_LINE} />
         </g>
 
         {/* Supabase */}
-        <rect x="40" y="198" width="200" height="20" rx="4" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
-        <text x="140" y="212" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Supabase — documents + doc_trees</text>
+        <rect x="70" y="318" width="360" height="32" rx="6" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
+        <text x="250" y="340" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Supabase — documents + doc_trees</text>
       </svg>
     </div>
   );
@@ -146,54 +146,54 @@ function IngestionDiagram() {
 
 function DualSourceDiagram() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
-      <svg viewBox="0 0 280 220" className="w-full h-full" fill="none">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-4 rounded-md">
+      <svg viewBox="0 0 500 360" className="w-full h-full" fill="none">
         <NeonGlowFilter />
         {/* User Question */}
-        <rect x="70" y="4" width="140" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="21" textAnchor="middle" fill={LABEL_COLOR} fontSize="9" fontFamily="monospace">User Question</text>
+        <rect x="125" y="8" width="250" height="36" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="32" textAnchor="middle" fill={LABEL_COLOR} fontSize="14" fontFamily="monospace">User Question</text>
 
         <g filter="url(#neonGlow)">
-          <line x1="140" y1="30" x2="140" y2="44" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,42 140,48 144,42" fill={ACCENT_LINE} />
+          <line x1="250" y1="44" x2="250" y2="68" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,64 250,72 255,64" fill={ACCENT_LINE} />
         </g>
 
         {/* Mode Detector */}
-        <rect x="50" y="50" width="180" height="26" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="140" y="65" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">Mode Detector — keyword classifier</text>
+        <rect x="80" y="76" width="340" height="36" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="250" y="100" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontFamily="monospace">Mode Detector — keyword classifier</text>
 
         {/* Branch lines */}
         <g filter="url(#neonGlow)">
-          <line x1="100" y1="76" x2="100" y2="100" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <line x1="180" y1="76" x2="180" y2="100" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="96,98 100,104 104,98" fill={ACCENT_LINE} />
-          <polygon points="176,98 180,104 184,98" fill={ACCENT_LINE} />
+          <line x1="170" y1="112" x2="170" y2="150" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <line x1="330" y1="112" x2="330" y2="150" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="165,146 170,154 175,146" fill={ACCENT_LINE} />
+          <polygon points="325,146 330,154 335,146" fill={ACCENT_LINE} />
         </g>
 
         {/* Mode A */}
-        <rect x="20" y="106" width="120" height="44" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="80" y="122" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Mode A — Vault RAG</text>
-        <text x="80" y="134" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">3-step pipeline</text>
-        <text x="80" y="144" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Obsidian docs</text>
+        <rect x="40" y="160" width="200" height="70" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="140" y="184" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Mode A — Vault RAG</text>
+        <text x="140" y="204" textAnchor="middle" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">3-step pipeline</text>
+        <text x="140" y="222" textAnchor="middle" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">Obsidian docs</text>
 
         {/* Mode B */}
-        <rect x="150" y="106" width="120" height="44" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
-        <text x="210" y="122" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Mode B — Portfolio</text>
-        <text x="210" y="134" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">SQL query</text>
-        <text x="210" y="144" textAnchor="middle" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Notion data</text>
+        <rect x="260" y="160" width="200" height="70" rx="6" fill={BOX_FILL} stroke={BOX_STROKE} />
+        <text x="360" y="184" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Mode B — Portfolio</text>
+        <text x="360" y="204" textAnchor="middle" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">SQL query</text>
+        <text x="360" y="222" textAnchor="middle" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">Notion data</text>
 
         {/* Merge lines */}
         <g filter="url(#neonGlow)">
-          <line x1="80" y1="150" x2="80" y2="170" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <line x1="210" y1="150" x2="210" y2="170" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <line x1="80" y1="170" x2="210" y2="170" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <line x1="140" y1="170" x2="140" y2="184" stroke={ACCENT_LINE} strokeWidth="1.5" />
-          <polygon points="136,182 140,188 144,182" fill={ACCENT_LINE} />
+          <line x1="140" y1="230" x2="140" y2="268" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <line x1="360" y1="230" x2="360" y2="268" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <line x1="140" y1="268" x2="360" y2="268" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <line x1="250" y1="268" x2="250" y2="296" stroke={ACCENT_LINE} strokeWidth="1.5" />
+          <polygon points="245,292 250,300 255,292" fill={ACCENT_LINE} />
         </g>
 
         {/* Claude */}
-        <rect x="40" y="190" width="200" height="26" rx="4" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
-        <text x="140" y="207" textAnchor="middle" fill={LABEL_COLOR} fontSize="8" fontWeight="600" fontFamily="monospace">Claude Sonnet — Answer Generator</text>
+        <rect x="70" y="304" width="360" height="40" rx="6" fill={BOX_FILL} stroke="rgba(226,232,240,0.25)" />
+        <text x="250" y="330" textAnchor="middle" fill={LABEL_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">Claude Sonnet — Answer Generator</text>
       </svg>
     </div>
   );
@@ -212,33 +212,33 @@ function InferenceTableDiagram() {
   ];
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-3 rounded-md">
-      <svg viewBox="0 0 280 200" className="w-full h-full" fill="none">
+    <div className="flex h-full w-full items-center justify-center bg-bg-surface p-4 rounded-md">
+      <svg viewBox="0 0 500 320" className="w-full h-full" fill="none">
         {/* Header row */}
-        <rect x="4" y="10" width="272" height="22" rx="3" fill="rgba(255,255,255,0.04)" />
-        <text x="14" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">TASK</text>
-        <text x="90" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">MODEL</text>
-        <text x="175" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">PROVIDER</text>
-        <text x="245" y="25" fill={DIM_COLOR} fontSize="7" fontWeight="600" fontFamily="monospace">COST</text>
+        <rect x="8" y="16" width="484" height="32" rx="4" fill="rgba(255,255,255,0.04)" />
+        <text x="24" y="38" fill={DIM_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">TASK</text>
+        <text x="160" y="38" fill={DIM_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">MODEL</text>
+        <text x="310" y="38" fill={DIM_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">PROVIDER</text>
+        <text x="430" y="38" fill={DIM_COLOR} fontSize="13" fontWeight="600" fontFamily="monospace">COST</text>
 
         {/* Data rows */}
         {rows.map((row, i) => {
-          const y = 42 + i * 36;
+          const y = 60 + i * 50;
           return (
             <g key={row.task}>
-              <rect x="4" y={y} width="272" height="30" rx="3" fill={BOX_FILL} stroke={BOX_STROKE} />
-              <text x="14" y={y + 19} fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">{row.task}</text>
-              <text x="90" y={y + 19} fill={LABEL_COLOR} fontSize="8" fontFamily="monospace">{row.model}</text>
-              <text x="175" y={y + 19} fill={DIM_COLOR} fontSize="7" fontFamily="monospace">{row.provider}</text>
-              <text x="245" y={y + 19} fill="rgba(226,232,240,0.8)" fontSize="8" fontWeight="600" fontFamily="monospace">{row.cost}</text>
+              <rect x="8" y={y} width="484" height="42" rx="4" fill={BOX_FILL} stroke={BOX_STROKE} />
+              <text x="24" y={y + 27} fill={LABEL_COLOR} fontSize="13" fontFamily="monospace">{row.task}</text>
+              <text x="160" y={y + 27} fill={LABEL_COLOR} fontSize="13" fontFamily="monospace">{row.model}</text>
+              <text x="310" y={y + 27} fill={DIM_COLOR} fontSize="13" fontFamily="monospace">{row.provider}</text>
+              <text x="430" y={y + 27} fill="rgba(226,232,240,0.8)" fontSize="13" fontWeight="600" fontFamily="monospace">{row.cost}</text>
             </g>
           );
         })}
 
         {/* Total */}
-        <line x1="4" y1="190" x2="276" y2="190" stroke={BOX_STROKE} />
-        <text x="175" y="204" fill={DIM_COLOR} fontSize="7" fontFamily="monospace">Total/query</text>
-        <text x="245" y="204" fill={LABEL_COLOR} fontSize="9" fontWeight="600" fontFamily="monospace">~$0.01</text>
+        <line x1="8" y1="275" x2="492" y2="275" stroke={BOX_STROKE} />
+        <text x="310" y="298" fill={DIM_COLOR} fontSize="13" fontFamily="monospace">Total/query</text>
+        <text x="430" y="298" fill={LABEL_COLOR} fontSize="15" fontWeight="600" fontFamily="monospace">~$0.01</text>
       </svg>
     </div>
   );
